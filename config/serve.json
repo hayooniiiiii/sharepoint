@@ -1,0 +1,33 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/spfx-serve.schema.json",
+  "port": 4321,
+  "https": true,
+  "serveConfigurations": {
+    "default": {
+      "pageUrl": "https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SitePages/Home.aspx",
+      "customActions": {
+        "579f8f3e-68d7-44f6-aaf1-cfc70bdd05b7": {
+          "location": "ClientSideExtension.ApplicationCustomizer",
+          "properties": {
+            "testMessage": "Test message",
+            "Top": "TDK Korea Portal",
+            "Bottom": "© TDK Korea Portal"
+          }
+        }
+      }
+    },
+    "tdkSharepoint": {
+      "pageUrl": "https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SitePages/Home.aspx",
+      "customActions": {
+        "579f8f3e-68d7-44f6-aaf1-cfc70bdd05b7": {
+          "location": "ClientSideExtension.ApplicationCustomizer",
+          "properties": {
+            "testMessage": "Test message",
+            "Top": "TDK Korea Portal",
+            "Bottom": "© TDK Korea Portal"
+          }
+        }
+      }
+    }
+  }
+}

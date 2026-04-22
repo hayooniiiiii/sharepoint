@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+    <ClientSideComponentInstance
+        Title="TdkSharepoint"
+        Location="ClientSideExtension.ApplicationCustomizer"
+        ComponentId="579f8f3e-68d7-44f6-aaf1-cfc70bdd05b7"
+        Properties="{&quot;testMessage&quot;:&quot;Test message&quot;}">
+    </ClientSideComponentInstance>
+</Elements>
