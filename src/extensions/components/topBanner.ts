@@ -1,36 +1,42 @@
 import { Locale } from '../models/types';
 
+/**
+ * Top Banner에서 사용하는 다국어 라벨
+ */
+const TOP_BANNER_LABELS: Record<Locale, {
+    worldWide: string;
+    koreaProduct: string;
+    main: string;
+    noticeBoard: string;
+}> = {
+    ko: {
+        worldWide: 'Worldwide',
+        koreaProduct: '생산제품',
+        main: 'Main',
+        noticeBoard: '게시판'
+    },
+    en: {
+        worldWide: 'Worldwide',
+        koreaProduct: 'TDK KOREA Products',
+        main: 'Main',
+        noticeBoard: 'Notice Board'
+    },
+    ja: {
+        worldWide: 'Worldwide',
+        koreaProduct: 'TDK KOREA 生産製品',
+        main: 'Main',
+        noticeBoard: '掲示板'
+    }
+};
+
+/**
+ * Top Banner HTML 생성
+ *
+ * 기존 HTML 구조와 class/id는 유지한다.
+ * 텍스트만 locale 기준으로 변경한다.
+ */
 export function getTopBannerHtml(title: string, locale: Locale): string {
-    const labels: Record<Locale, {
-        worldWide: string;
-        koreaProduct: string;
-        main: string;
-        noticeBoard: string;
-    }> = {
-        ko: {
-            worldWide: 'Worldwide',
-            koreaProduct: '생산제품',
-            main: 'Main',
-            noticeBoard: '게시판'
-
-        },
-        en: {
-            worldWide: 'Worldwide',
-            koreaProduct: 'TDK KOREA Products',
-            main: 'Main',
-            noticeBoard: 'Notice Board'
-        },
-
-        ja: {
-            worldWide: 'Worldwide',
-            koreaProduct: 'TDK KOREA 生産製品',
-            main: 'Main',
-            noticeBoard: '掲示板'
-
-        }
-    };
-
-    const currentLabels = labels[locale];
+    const currentLabels = TOP_BANNER_LABELS[locale] || TOP_BANNER_LABELS.ko;
 
     return `
     <div class="tdk-top-banner">
@@ -47,7 +53,7 @@ export function getTopBannerHtml(title: string, locale: Locale): string {
               src="https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/Tdk_icon4.png?csf=1&web=1&e=vC9zS1"
               alt="TDK Logo"
             />
-            <span class="tdk-top-banner__title">TDK KOREA</span>
+            <span class="tdk-top-banner__title">${title}</span>
           </a>
 
           <div class="tdk-top-banner__actions">
@@ -73,6 +79,8 @@ export function getTopBannerHtml(title: string, locale: Locale): string {
             ${currentLabels.main}
           </a>
 
+          <!-- 게시판 메뉴를 다시 사용할 때는 아래 주석만 해제 -->
+          <!--
           <a
             class="tdk-nav-btn"
             href="https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SitePages/%EA%B2%8C%EC%8B%9C%ED%8C%90.aspx"
@@ -80,8 +88,7 @@ export function getTopBannerHtml(title: string, locale: Locale): string {
           >
             ${currentLabels.noticeBoard}
           </a>
-
-      
+          -->
         </div>
       </nav>
     </div>

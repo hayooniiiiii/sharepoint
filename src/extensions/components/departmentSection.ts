@@ -1,19 +1,15 @@
-import { DepartmentLink, DepartmentLinkSet } from '../models/types';
+import { DepartmentLink, DepartmentLinkSet, Locale, LocalizedText } from '../models/types';
 
-function getLanguageKey(value: string): keyof DepartmentLinkSet {
-    const normalized: string = (value || '').toLowerCase();
-
-    if (normalized.indexOf('ja') === 0) {
-        return 'ja';
-    }
-
-    if (normalized.indexOf('ko') === 0) {
-        return 'ko';
-    }
-
-    return 'en';
+/**
+ * 다국어 텍스트 반환
+ */
+function getLocalizedText(text: LocalizedText, locale: Locale): string {
+    return text[locale] || text.ko || text.en || text.ja || '';
 }
 
+/**
+ * HTML escape 처리
+ */
 function escapeHtml(value: string): string {
     return value
         .replace(/&/g, '&amp;')
@@ -23,44 +19,64 @@ function escapeHtml(value: string): string {
         .replace(/'/g, '&#39;');
 }
 
+/**
+ * 부문 채널 라벨
+ */
+const DEPARTMENT_LABELS: Record<Locale, {
+    title: string;
+}> = {
+    ko: {
+        title: '부문 채널'
+    },
+    en: {
+        title: 'Department Channel'
+    },
+    ja: {
+        title: '部門チャンネル'
+    }
+};
+
+/**
+ * 부문 채널 HTML 생성
+ *
+ * - departmentLinks는 언어별 배열이 아니라 단일 배열
+ * - 각 item.text만 { ko, en, ja } 구조로 관리
+ */
 export function getDepartmentSectionHtml(
     departmentLinks: DepartmentLinkSet,
-    localeOrCultureName: string
+    locale: Locale
 ): string {
-    const languageKey: keyof DepartmentLinkSet = getLanguageKey(localeOrCultureName);
-    const items: DepartmentLink[] = departmentLinks[languageKey] || [];
-
-    const titleMap: Record<keyof DepartmentLinkSet, string> = {
-        ko: '부문 채널',
-        en: 'Department Channel',
-        ja: '部門チャンネル'
-    };
+    const labels = DEPARTMENT_LABELS[locale] || DEPARTMENT_LABELS.ko;
 
     return `
     <div class="tdk-department-section">
       <div class="tdk-section-header">
         <div>
-          <div class="tdk-section-header__title">${titleMap[languageKey]}</div>
+          <div class="tdk-section-header__title">${labels.title}</div>
         </div>
       </div>
 
       <div class="tdk-department-row">
-        ${items.map((item: DepartmentLink): string => {
-        const href: string = item.disabled || !item.url
-            ? 'javascript:void(0);'
-            : escapeHtml(item.url);
+        ${departmentLinks.map((item: DepartmentLink): string => {
+        const isDisabled: boolean = item.disabled === true || !item.url;
 
-        const targetAttrs: string = item.disabled || !item.url
+        const href: string = isDisabled
+            ? 'javascript:void(0);'
+            : item.url || '';
+
+        const targetAttrs: string = isDisabled
             ? 'aria-disabled="true"'
             : 'target="_blank" rel="noopener noreferrer"';
 
+        const text: string = escapeHtml(getLocalizedText(item.text, locale));
+
         return `
             <a
-              class="tdk-department-btn${item.disabled ? ' is-disabled' : ''}"
-              href="${href}"
+              class="tdk-department-btn${isDisabled ? ' is-disabled' : ''}"
+              href="${escapeHtml(href)}"
               ${targetAttrs}
             >
-              ${escapeHtml(item.text)}
+              ${text}
             </a>
           `;
     }).join('')}

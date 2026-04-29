@@ -1,24 +1,33 @@
 import { QuickLink } from '../models/types';
 
+/**
+ * =========================
+ * QUICK LINKS (바로가기)
+ * =========================
+ *
+ * - 포털 하단 빠른 접근 메뉴
+ * - 모든 text는 다국어(LocalisedText)로 관리
+ * - 아이콘은 SharePoint Asset 사용
+ *
+ * 규칙:
+ * 1. text는 절대 string 금지 → 반드시 { ko, en, ja }
+ * 2. url은 내부망 / 외부망 구분 없이 그대로 사용
+ * 3. 아이콘은 동일한 스타일 유지
+ */
+
 export const QUICK_LINKS: QuickLink[] = [
     {
-        text: {
-            ko: 'MTS',
-            en: 'MTS',
-            ja: 'MTS'
-        },
+        text: { ko: 'MTS', en: 'MTS', ja: 'MTS' },
         url: 'http://10.22.1.227/MTS2/login.aspx',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/MTS.png'
     },
+
     {
-        text: {
-            ko: 'MAPPS',
-            en: 'MAPPS',
-            ja: 'MAPPS'
-        },
+        text: { ko: 'MAPPS', en: 'MAPPS', ja: 'MAPPS' },
         url: 'http://wavesv151.jp.intdk/MAPPSTQTTKR/login.aspx?isAnother=1#/MAPPSTQTTKR/Setting/userManage.aspx',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/MAPPS.png'
     },
+
     {
         text: {
             ko: '통합정보시스템',
@@ -28,58 +37,34 @@ export const QUICK_LINKS: QuickLink[] = [
         url: 'http://kstas01.tdk.biz/',
         icon: 'https://tdkgroup.sharepoint.com/:i:/r/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/river_icon.png?csf=1&web=1&e=TjuzCe'
     },
+
     {
-        text: {
-            ko: 'EPR',
-            en: 'EPR',
-            ja: 'EPR'
-        },
+        text: { ko: 'EPR', en: 'EPR', ja: 'EPR' },
         url: 'http://imtdk.tdk.biz/imart/login',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/epr.ico.png'
     },
+
     {
-        text: {
-            ko: 'EPO',
-            en: 'EPO',
-            ja: 'EPO'
-        },
+        text: { ko: 'EPO', en: 'EPO', ja: 'EPO' },
         url: 'https://supplier.tdk.com.cn:8280/epo/admin/viewuser.do',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/epo.png'
     },
+
     {
-        text: {
-            ko: 'UID',
-            en: 'UID',
-            ja: 'UID'
-        },
+        text: { ko: 'UID', en: 'UID', ja: 'UID' },
         url: 'http://10.22.1.225/',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/UID.png'
     },
+
     {
-        text: {
-            ko: 'ASSIST4',
-            en: 'ASSIST4',
-            ja: 'ASSIST4'
-        },
+        text: { ko: 'ASSIST4', en: 'ASSIST4', ja: 'ASSIST4' },
         url: 'http://as4txm.tdk.biz/Citrix/Assist4Web/',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/ASSIST4.png'
     },
+
     {
-        text: {
-            ko: 'genAI',
-            en: 'genAI',
-            ja: 'genAI'
-        },
+        text: { ko: 'genAI', en: 'genAI', ja: 'genAI' },
         url: 'https://aichat.tdk.com/login',
         icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/gen.png'
-    },
-    {
-        text: {
-            ko: 'Tableau',
-            en: 'Tableau',
-            ja: 'Tableau'
-        },
-        url: 'https://tdk-tableau.tdk.biz/#/views/PSIData/1_2?:iid=1',
-        icon: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/tableau.png'
     }
 ];

@@ -20,7 +20,7 @@ import { PRODUCT_CARDS } from '../data/productCards';
 import { QUICK_LINKS } from '../data/quickLinks';
 import { DEPARTMENT_LINKS } from '../data/departmentLinks';
 import { CUSTOM_STYLES } from '../styles/customStyles';
-import { Locale } from '../models/types';
+import { Locale, ProductCard } from '../models/types';
 
 export interface ITdkSharepointApplicationCustomizerProperties {
   Top?: string;
@@ -33,11 +33,14 @@ export default class TdkSharepointApplicationCustomizer
   private _bottomPlaceholder: PlaceholderContent | undefined;
   private _topPlaceholder: PlaceholderContent | undefined;
   private _locale: Locale = 'ko';
+
   private _uiObserver: MutationObserver | undefined;
   private _pageObserver: MutationObserver | undefined;
   private _urlWatchTimer: number | undefined;
   private _syncTimer: number | undefined;
+
   private _lastUrl: string = window.location.href;
+  private _tableauPopupEscHandler: ((event: KeyboardEvent) => void) | undefined;
 
   public onInit(): Promise<void> {
     Log.info(LOG_SOURCE, `Initialized ${strings.Title}`);
@@ -45,8 +48,6 @@ export default class TdkSharepointApplicationCustomizer
     this._locale = this._getLocale();
 
     this._injectStyles();
-
-    // 최초 진입 깜빡임 최소화
     this._applyPermissionUiImmediately();
 
     this.context.placeholderProvider.changedEvent.add(this, this._renderPlaceholders);
@@ -56,6 +57,7 @@ export default class TdkSharepointApplicationCustomizer
       this._syncPageUi();
       this._bindLanguageChange();
       this._bindNavEvents();
+      this._bindTableauPopupEvents();
       this._watchUrlChange();
       this._startPageSyncObserver();
     }, 300);
@@ -105,8 +107,9 @@ export default class TdkSharepointApplicationCustomizer
       );
 
       if (this._topPlaceholder && this._topPlaceholder.domElement) {
-        const topText: string = this.properties.Top || 'TDK Korea Portal';
-        this._topPlaceholder.domElement.innerHTML = getTopBannerHtml(topText, this._locale);
+        const topText: string = this.properties.Top || 'TDK KOREA';
+        this._topPlaceholder.domElement.innerHTML =
+            getTopBannerHtml(topText, this._locale);
       }
     }
 
@@ -118,7 +121,8 @@ export default class TdkSharepointApplicationCustomizer
 
       if (this._bottomPlaceholder && this._bottomPlaceholder.domElement) {
         const bottomText: string = this.properties.Bottom || '© TDK Korea Portal';
-        this._bottomPlaceholder.domElement.innerHTML = getFooterHtml(bottomText);
+        this._bottomPlaceholder.domElement.innerHTML =
+            getFooterHtml(bottomText, this._locale);
       }
     }
   };
@@ -127,11 +131,7 @@ export default class TdkSharepointApplicationCustomizer
     const userEmail: string = (this.context.pageContext.user.email || '').toLowerCase().trim();
     const loginName: string = (this.context.pageContext.user.loginName || '').toLowerCase().trim();
 
-    if (userEmail) {
-      return userEmail;
-    }
-
-    return loginName;
+    return userEmail || loginName;
   }
 
   private _isAllowedEditor(): boolean {
@@ -155,12 +155,10 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   private _shouldHideSharePointUi(): boolean {
-    // 게시판에서는 누구든 편집탭 보여야 함
     if (this._isBoardPage()) {
       return false;
     }
 
-    // 게시판이 아닌 페이지에서만 일반 사용자 숨김
     return !this._isAllowedEditor();
   }
 
@@ -206,6 +204,7 @@ export default class TdkSharepointApplicationCustomizer
 
     for (const selector of selectors) {
       const elements: NodeListOf<Element> = document.querySelectorAll(selector);
+
       elements.forEach((el: Element): void => {
         const htmlEl: HTMLElement = el as HTMLElement;
         htmlEl.style.setProperty('display', 'none', 'important');
@@ -232,6 +231,7 @@ export default class TdkSharepointApplicationCustomizer
 
     for (const selector of selectors) {
       const elements: NodeListOf<Element> = document.querySelectorAll(selector);
+
       elements.forEach((el: Element): void => {
         const htmlEl: HTMLElement = el as HTMLElement;
         htmlEl.style.removeProperty('display');
@@ -281,6 +281,8 @@ export default class TdkSharepointApplicationCustomizer
     this._ensureBodySectionRendered();
     this._setActiveNav();
     this._bindNavEvents();
+    this._bindLanguageChange();
+    this._bindTableauPopupEvents();
   }
 
   private _startPageSyncObserver(): void {
@@ -296,10 +298,15 @@ export default class TdkSharepointApplicationCustomizer
       this._syncTimer = window.setTimeout((): void => {
         this._applyPermissionUi();
 
-        if (!this._isBoardPage() && !document.getElementById('tdk-product-section')) {
-          this._ensureBodySectionRendered();
+        if (!this._isBoardPage()) {
+          if (!document.getElementById('tdk-product-section')) {
+            this._ensureBodySectionRendered();
+          }
+
           this._bindNavEvents();
+          this._bindLanguageChange();
           this._setActiveNav();
+          this._bindTableauPopupEvents();
         }
       }, 250);
     });
@@ -312,6 +319,7 @@ export default class TdkSharepointApplicationCustomizer
 
   private _ensureBodySectionRendered(retryCount: number = 0): void {
     if (document.getElementById('tdk-product-section')) {
+      this._bindTableauPopupEvents();
       return;
     }
 
@@ -328,6 +336,7 @@ export default class TdkSharepointApplicationCustomizer
           this._ensureBodySectionRendered(retryCount + 1);
         }, 300);
       }
+
       return;
     }
 
@@ -338,7 +347,7 @@ export default class TdkSharepointApplicationCustomizer
 
     section.innerHTML = `
       <div class="tdk-product-wrap">
-        ${getHeroBannerHtml(BANNER_URL)}
+        ${getHeroBannerHtml(BANNER_URL, this._locale)}
         ${getTableauSectionHtml(PRODUCT_CARDS, this._locale)}
         ${getQuickLinksHtml(QUICK_LINKS, this._locale)}
         ${getDepartmentSectionHtml(DEPARTMENT_LINKS, this._locale)}
@@ -352,6 +361,20 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     this._bindCardEvents(section);
+    this._bindTableauPopupEvents();
+  }
+
+  private _getProductCardById(id: string): ProductCard | undefined {
+    let selected: ProductCard | undefined = undefined;
+
+    for (const card of PRODUCT_CARDS) {
+      if (card.id === id) {
+        selected = card;
+        break;
+      }
+    }
+
+    return selected;
   }
 
   private _bindCardEvents(section: HTMLElement): void {
@@ -362,6 +385,12 @@ export default class TdkSharepointApplicationCustomizer
     let activeCardId: string | null = null;
 
     buttons.forEach((btn: HTMLElement): void => {
+      if (btn.dataset.tdkCardBound === 'true') {
+        return;
+      }
+
+      btn.dataset.tdkCardBound = 'true';
+
       btn.addEventListener('click', (): void => {
         const id: string | null = btn.getAttribute('data-card-id');
 
@@ -390,14 +419,7 @@ export default class TdkSharepointApplicationCustomizer
           return;
         }
 
-        let selected = undefined;
-
-        for (const card of PRODUCT_CARDS) {
-          if (card.id === id) {
-            selected = card;
-            break;
-          }
-        }
+        const selected: ProductCard | undefined = this._getProductCardById(id);
 
         if (!selected) {
           return;
@@ -424,6 +446,63 @@ export default class TdkSharepointApplicationCustomizer
     });
   }
 
+  private _bindTableauPopupEvents(): void {
+    const openBtn: HTMLElement | null =
+        document.getElementById('tdk-tableau-account-btn') as HTMLElement | null;
+    const popup: HTMLElement | null =
+        document.getElementById('tdk-tableau-popup') as HTMLElement | null;
+    const closeBtn: HTMLElement | null =
+        document.getElementById('tdk-tableau-popup-close') as HTMLElement | null;
+    const backdrop: HTMLElement | null =
+        document.getElementById('tdk-tableau-popup-backdrop') as HTMLElement | null;
+
+    if (!openBtn || !popup) {
+      return;
+    }
+
+    if (openBtn.dataset.tdkPopupBound !== 'true') {
+      openBtn.dataset.tdkPopupBound = 'true';
+
+      openBtn.addEventListener('click', (): void => {
+        popup.classList.add('is-open');
+        document.body.classList.add('tdk-tableau-popup-open');
+      });
+    }
+
+    const closePopup = (): void => {
+      popup.classList.remove('is-open');
+      document.body.classList.remove('tdk-tableau-popup-open');
+    };
+
+    if (closeBtn && closeBtn.dataset.tdkPopupBound !== 'true') {
+      closeBtn.dataset.tdkPopupBound = 'true';
+      closeBtn.addEventListener('click', closePopup);
+    }
+
+    if (backdrop && backdrop.dataset.tdkPopupBound !== 'true') {
+      backdrop.dataset.tdkPopupBound = 'true';
+      backdrop.addEventListener('click', closePopup);
+    }
+
+    if (!this._tableauPopupEscHandler) {
+      this._tableauPopupEscHandler = (event: KeyboardEvent): void => {
+        if (event.key !== 'Escape') {
+          return;
+        }
+
+        const currentPopup: HTMLElement | null =
+            document.getElementById('tdk-tableau-popup') as HTMLElement | null;
+
+        if (currentPopup) {
+          currentPopup.classList.remove('is-open');
+          document.body.classList.remove('tdk-tableau-popup-open');
+        }
+      };
+
+      document.addEventListener('keydown', this._tableauPopupEscHandler);
+    }
+  }
+
   private _bindLanguageChange(): void {
     const langSelect: HTMLSelectElement | null =
         document.getElementById('tdk-lang-select') as HTMLSelectElement | null;
@@ -441,12 +520,84 @@ export default class TdkSharepointApplicationCustomizer
     langSelect.dataset.tdkBound = 'true';
 
     langSelect.addEventListener('change', (): void => {
-      const value: string = langSelect.value;
-      const currentUrl: URL = new URL(window.location.href);
+      const value: Locale = langSelect.value as Locale;
 
+      this._locale = value;
+
+      const currentUrl: URL = new URL(window.location.href);
       currentUrl.searchParams.set('lang', value);
-      window.location.assign(currentUrl.toString());
+      window.history.replaceState({}, '', currentUrl.toString());
+
+      this._rerenderCustomUi();
     });
+  }
+
+  private _rerenderCustomUi(): void {
+    const activeCard: HTMLElement | null =
+        document.querySelector('.tdk-main-card.is-active') as HTMLElement | null;
+
+    const activeCardId: string | null = activeCard
+        ? activeCard.getAttribute('data-card-id')
+        : null;
+
+    if (this._topPlaceholder && this._topPlaceholder.domElement) {
+      const topText: string = this.properties.Top || 'TDK KOREA';
+      this._topPlaceholder.domElement.innerHTML =
+          getTopBannerHtml(topText, this._locale);
+    }
+
+    if (this._bottomPlaceholder && this._bottomPlaceholder.domElement) {
+      const bottomText: string = this.properties.Bottom || '© TDK Korea Portal';
+      this._bottomPlaceholder.domElement.innerHTML =
+          getFooterHtml(bottomText, this._locale);
+    }
+
+    const wrap: HTMLElement | null =
+        document.querySelector('.tdk-product-wrap') as HTMLElement | null;
+
+    if (!wrap) {
+      this._ensureBodySectionRendered();
+      return;
+    }
+
+    wrap.innerHTML = `
+      ${getHeroBannerHtml(BANNER_URL, this._locale)}
+      ${getTableauSectionHtml(PRODUCT_CARDS, this._locale)}
+      ${getQuickLinksHtml(QUICK_LINKS, this._locale)}
+      ${getDepartmentSectionHtml(DEPARTMENT_LINKS, this._locale)}
+    `;
+
+    const section: HTMLElement | null =
+        document.getElementById('tdk-product-section') as HTMLElement | null;
+
+    if (section) {
+      this._bindCardEvents(section);
+    }
+
+    this._bindLanguageChange();
+    this._bindNavEvents();
+    this._bindTableauPopupEvents();
+    this._setActiveNav();
+
+    if (activeCardId && section) {
+      const restoredButton: HTMLElement | null =
+          section.querySelector(`.tdk-main-card[data-card-id="${activeCardId}"]`) as HTMLElement | null;
+
+      const restoredCard: ProductCard | undefined = this._getProductCardById(activeCardId);
+
+      if (restoredButton && restoredCard) {
+        const cardRow: HTMLElement | null =
+            section.querySelector('.tdk-card-row') as HTMLElement | null;
+
+        restoredButton.classList.add('is-active');
+
+        if (cardRow) {
+          cardRow.classList.add('has-active');
+        }
+
+        renderDetailPanel(restoredCard, this._locale);
+      }
+    }
   }
 
   private _bindNavEvents(): void {
@@ -489,11 +640,13 @@ export default class TdkSharepointApplicationCustomizer
           this._syncPageUi();
           this._bindLanguageChange();
           this._bindNavEvents();
+          this._bindTableauPopupEvents();
         }, 150);
 
         window.setTimeout((): void => {
           this._applyPermissionUi();
           this._syncPageUi();
+          this._bindTableauPopupEvents();
         }, 500);
       }
     }, 200);
@@ -522,10 +675,8 @@ export default class TdkSharepointApplicationCustomizer
         }
       } else {
         if (
-            href === path ||
-            href.indexOf(path) > -1 ||
-            path.indexOf(href) > -1 ||
-            href.indexOf('/sitepages/home.aspx') > -1
+            href.indexOf('/sitepages/home.aspx') > -1 ||
+            path.indexOf('/sitepages/home.aspx') > -1
         ) {
           btn.classList.add('is-active');
           btn.setAttribute('aria-current', 'page');
@@ -564,6 +715,11 @@ export default class TdkSharepointApplicationCustomizer
     if (this._syncTimer) {
       window.clearTimeout(this._syncTimer);
       this._syncTimer = undefined;
+    }
+
+    if (this._tableauPopupEscHandler) {
+      document.removeEventListener('keydown', this._tableauPopupEscHandler);
+      this._tableauPopupEscHandler = undefined;
     }
 
     console.log('[TdkSharepointApplicationCustomizer] Disposed placeholders.');
