@@ -687,7 +687,7 @@ export const CUSTOM_STYLES = `
 .tdk-flyout-menu {
   position: absolute;
   top: -7px;
-  left: calc(100% + 8px);
+  left: calc(100% - 20px);
   width: 200px;
   min-width: 200px;
   max-width: 200px;
@@ -718,7 +718,7 @@ export const CUSTOM_STYLES = `
 
 .tdk-flyout-menu .tdk-flyout-menu {
   top: -7px;
-  left: calc(100% + 8px);
+  left: calc(100% - 20px);
 }
 
 .tdk-flyout-item {
