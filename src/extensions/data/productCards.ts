@@ -7,7 +7,6 @@ import {
     COIL_ORDER_INFORMATION_URL,
     CORE_ORDER_INFORMATION_URL,
     CORE_PRODUCTION_PERFORMANCE_URL,
-    CORE_PROFIT_URL,
     TABLEAU_URL,
     VLSCX_PRODUCTION_PERFORMACE_URL,
     VLSEX_PRODUCTION_PERFORMACE_URL
@@ -107,12 +106,20 @@ export const PRODUCT_CARDS: ProductCard[] = [
                         links: [
                             { text: { ko: '실적', en: 'Performance', ja: '実績' }, url: VLSCX_PRODUCTION_PERFORMACE_URL }
                         ]
+                    },
+                    {
+                        title: { ko: 'PID', en: 'PID', ja: 'PID' },
+                        image: PID_IMAGE,
+                        links: [
+                            { text: { ko: '실적', en: 'Performance', ja: '実績' }, url: TABLEAU_URL },
+                            { text: { ko: '수율 추이', en: 'Yield Trend', ja: '歩留推移' }, url: TABLEAU_URL },
+                            { text: { ko: '스크랩 비용', en: 'Scrap Cost', ja: 'スクラップコスト' }, url: TABLEAU_URL }
+                        ]
                     }
                 ]
             }
         ]
     },
-
     {
         id: 'facility',
         title: { ko: '설비', en: 'Facility', ja: '設備' },
@@ -145,31 +152,14 @@ export const PRODUCT_CARDS: ProductCard[] = [
                             { text: { ko: '소모품 관리', en: 'Consumables Management', ja: '消耗品管理' }, url: TABLEAU_URL }
                         ]
                     },
-                    {
-                        title: { ko: 'ADL', en: 'ADL', ja: 'ADL' },
-                        image: ADL_IMAGE,
-                        links: PREPARING_LINK
-                    },
-                    {
-                        title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' },
-                        image: VLS_EX_IMAGE,
-                        links: PREPARING_LINK
-                    },
-                    {
-                        title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' },
-                        image: VLS_CX_IMAGE,
-                        links: PREPARING_LINK
-                    },
-                    {
-                        title: { ko: 'PID', en: 'PID', ja: 'PID' },
-                        image: PID_IMAGE,
-                        links: []
-                    }
+                    { title: { ko: 'ADL', en: 'ADL', ja: 'ADL' }, image: ADL_IMAGE, links: PREPARING_LINK },
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: PREPARING_LINK },
+                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: PREPARING_LINK },
+                    { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [] }
                 ]
             }
         ]
     },
-
     {
         id: 'quality',
         title: { ko: '품질', en: 'Quality', ja: '品質' },
@@ -190,39 +180,15 @@ export const PRODUCT_CARDS: ProductCard[] = [
             {
                 title: { ko: 'COIL', en: 'COIL', ja: 'COIL' },
                 groups: [
-                    {
-                        title: { ko: 'ACT', en: 'ACT', ja: 'ACT' },
-                        image: ACT_IMAGE,
-                        links: [
-                            { text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }
-                        ]
-                    },
-                    {
-                        title: { ko: 'ADL', en: 'ADL', ja: 'ADL' },
-                        image: ADL_IMAGE,
-                        links: [
-                            { text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }
-                        ]
-                    },
-                    {
-                        title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' },
-                        image: VLS_EX_IMAGE,
-                        links: [
-                            { text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }
-                        ]
-                    },
-                    {
-                        title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' },
-                        image: VLS_CX_IMAGE,
-                        links: [
-                            { text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }
-                        ]
-                    }
+                    { title: { ko: 'ACT', en: 'ACT', ja: 'ACT' }, image: ACT_IMAGE, links: [{ text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'ADL', en: 'ADL', ja: 'ADL' }, image: ADL_IMAGE, links: [{ text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [{ text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [{ text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [{ text: { ko: '품질 정보', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] }
                 ]
             }
         ]
     },
-
     {
         id: 'order',
         title: { ko: '수주', en: 'Order', ja: '受注' },
@@ -288,7 +254,6 @@ export const PRODUCT_CARDS: ProductCard[] = [
             }
         ]
     },
-
     {
         id: 'profit',
         title: { ko: '손익', en: 'Profit', ja: '損益' },
@@ -301,7 +266,7 @@ export const PRODUCT_CARDS: ProductCard[] = [
                         title: { ko: 'Ferrite', en: 'Ferrite', ja: 'Ferrite' },
                         image: FERRITE_IMAGE,
                         links: [
-                            { text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: CORE_PROFIT_URL }
+                            { text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }
                         ]
                     }
                 ]
@@ -309,13 +274,11 @@ export const PRODUCT_CARDS: ProductCard[] = [
             {
                 title: { ko: 'COIL', en: 'COIL', ja: 'COIL' },
                 groups: [
-                    {
-                        title: { ko: 'ACT', en: 'ACT', ja: 'ACT' },
-                        image: ACT_IMAGE,
-                        links: [
-                            { text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: CORE_PROFIT_URL }
-                        ]
-                    }
+                    { title: { ko: 'ACT', en: 'ACT', ja: 'ACT' }, image: ACT_IMAGE, links: [{ text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'ADL', en: 'ADL', ja: 'ADL' }, image: ADL_IMAGE, links: [{ text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [{ text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [{ text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [{ text: { ko: '손익 정보', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] }
                 ]
             }
         ]
