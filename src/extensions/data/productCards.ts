@@ -18,6 +18,11 @@ const ACT_IMAGE = 'https://www.tdk.com/system/files/ACT45.png';
 const ADL_IMAGE = 'https://www.tdk.com/system/files/ADL2012.png';
 const VLS_EX_IMAGE = 'https://www.tdk.com/system/files/VLS-EX%28Consumer%29.png';
 const VLS_CX_IMAGE = 'https://www.tdk.com/system/files/VLS-CX_.png';
+const PID_IMAGE = 'https://tdkgroup.sharepoint.com/:i:/r/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/icon/PID120%20Product.png?csf=1&web=1&e=Zrebkf';
+
+const PREPARING_LINK = [
+    { text: { ko: '준비중입니다', en: 'Preparing', ja: '準備中です' }, url: TABLEAU_URL }
+];
 
 export const PRODUCT_CARDS: ProductCard[] = [
     {
@@ -143,11 +148,22 @@ export const PRODUCT_CARDS: ProductCard[] = [
                     {
                         title: { ko: 'ADL', en: 'ADL', ja: 'ADL' },
                         image: ADL_IMAGE,
-                        links: [
-                            { text: { ko: 'PEIS', en: 'PEIS', ja: 'PEIS' }, url: ACT_PEIS_URL },
-                            { text: { ko: '로깅시스템', en: 'LOGGING SYSTEM', ja: 'LOGGING SYSTEM' }, url: ACT_LOGGINGN_URL },
-                            { text: { ko: '수리 보고서', en: 'Repair Report', ja: '修理報告書' }, url: TABLEAU_URL }
-                        ]
+                        links: PREPARING_LINK
+                    },
+                    {
+                        title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' },
+                        image: VLS_EX_IMAGE,
+                        links: PREPARING_LINK
+                    },
+                    {
+                        title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' },
+                        image: VLS_CX_IMAGE,
+                        links: PREPARING_LINK
+                    },
+                    {
+                        title: { ko: 'PID', en: 'PID', ja: 'PID' },
+                        image: PID_IMAGE,
+                        links: []
                     }
                 ]
             }
@@ -262,6 +278,11 @@ export const PRODUCT_CARDS: ProductCard[] = [
                         links: [
                             { text: { ko: '주문 정보', en: 'Order Information', ja: '注文情報' }, url: COIL_ORDER_INFORMATION_URL }
                         ]
+                    },
+                    {
+                        title: { ko: 'PID', en: 'PID', ja: 'PID' },
+                        image: PID_IMAGE,
+                        links: []
                     }
                 ]
             }

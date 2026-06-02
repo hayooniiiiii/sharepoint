@@ -236,7 +236,7 @@ export const CUSTOM_STYLES = `
 .tdk-hero-banner {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: 420px;
   overflow: hidden;
   border-radius: 24px;
   margin-bottom: 36px;
@@ -245,15 +245,25 @@ export const CUSTOM_STYLES = `
 }
 
 .tdk-hero-banner__image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 25% 18%;
   display: block;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.tdk-hero-banner__image.is-active {
+  opacity: 1;
 }
 
 .tdk-hero-banner__overlay {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     90deg,
     rgba(3, 7, 18, 0.72) 0%,
@@ -287,6 +297,36 @@ export const CUSTOM_STYLES = `
   margin: 0;
 }
 
+.tdk-hero-banner__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tdk-hero-banner__arrow:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.tdk-hero-banner__arrow--prev {
+  left: 18px;
+}
+
+.tdk-hero-banner__arrow--next {
+  right: 18px;
+}
 
 /* =========================
    4. QUICK LINKS (FULL WIDTH GRID)

@@ -32,6 +32,8 @@ const TABLEAU_SECTION_LABELS: Record<Locale, {
     dashboard: string;
     account: string;
     popupTitle: string;
+    scadaTitle: string;
+    tableauTitle: string;
     id: string;
     password: string;
     notice: string;
@@ -39,29 +41,35 @@ const TABLEAU_SECTION_LABELS: Record<Locale, {
 }> = {
     ko: {
         dashboard: '대시보드',
-        account: 'Tableau 계정',
-        popupTitle: 'Tableau 접속 계정',
+        account: '공용 계정',
+        popupTitle: '공용 계정',
+        scadaTitle: 'SCADA 접속 계정',
+        tableauTitle: 'Tableau 접속 계정',
         id: 'ID',
         password: 'Password',
-        notice: 'Tableau 접속 시 위 계정을 사용하세요.',
+        notice: '시스템 접속 시 아래 계정을 사용하세요.',
         copy: '복사'
     },
     en: {
         dashboard: 'Dashboard',
-        account: 'Tableau Account',
-        popupTitle: 'Tableau Login Account',
+        account: 'Public Account',
+        popupTitle: 'Public Account',
+        scadaTitle: 'SCADA Login Account',
+        tableauTitle: 'Tableau Login Account',
         id: 'ID',
         password: 'Password',
-        notice: 'Use the account above to access Tableau.',
+        notice: 'Use the accounts below to access each system.',
         copy: 'Copy'
     },
     ja: {
         dashboard: 'ダッシュボード',
-        account: 'Tableau アカウント',
-        popupTitle: 'Tableau 接続アカウント',
+        account: 'パブリックアカウント',
+        popupTitle: 'パブリックアカウント',
+        scadaTitle: 'SCADA 接続アカウント',
+        tableauTitle: 'Tableau 接続アカウント',
         id: 'ID',
         password: 'Password',
-        notice: 'Tableau 接続時に上記のアカウントを使用してください。',
+        notice: '各システム接続時に下記のアカウントを使用してください。',
         copy: 'コピー'
     }
 };
@@ -123,6 +131,46 @@ export function getTableauSectionHtml(cards: ProductCard[], locale: Locale): str
 
           <div class="tdk-tableau-popup__title">
             ${labels.popupTitle}
+          </div>
+
+          <div class="tdk-tableau-popup__title">
+            ${labels.scadaTitle}
+          </div>
+
+          <div class="tdk-tableau-popup__row">
+            <span>${labels.id}</span>
+
+            <strong class="tdk-tableau-popup__value">
+              tdk@tdk.com
+            </strong>
+
+            <button
+              class="tdk-copy-btn"
+              type="button"
+              data-copy="tdk@tdk.com"
+            >
+              ${labels.copy}
+            </button>
+          </div>
+
+          <div class="tdk-tableau-popup__row">
+            <span>${labels.password}</span>
+
+            <strong class="tdk-tableau-popup__value">
+              tdktdkkoreakorea2025!
+            </strong>
+
+            <button
+              class="tdk-copy-btn"
+              type="button"
+              data-copy="tdktdkkoreakorea2025!"
+            >
+              ${labels.copy}
+            </button>
+          </div>
+
+          <div class="tdk-tableau-popup__title">
+            ${labels.tableauTitle}
           </div>
 
           <div class="tdk-tableau-popup__row">

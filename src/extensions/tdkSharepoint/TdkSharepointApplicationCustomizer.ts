@@ -7,7 +7,7 @@ import {
 
 import * as strings from 'TdkSharepointApplicationCustomizerStrings';
 
-import { LOG_SOURCE, BANNER_URL } from '../data/constants';
+import { LOG_SOURCE, BANNER_URLS } from '../data/constants';
 import { getTopBannerHtml } from '../components/topBanner';
 import { getFooterHtml } from '../components/footer';
 import { getHeroBannerHtml } from '../components/heroBanner';
@@ -38,6 +38,7 @@ export default class TdkSharepointApplicationCustomizer
   private _pageObserver: MutationObserver | undefined;
   private _urlWatchTimer: number | undefined;
   private _syncTimer: number | undefined;
+  private _heroBannerTimer: number | undefined;
 
   private _lastUrl: string = window.location.href;
   private _tableauPopupEscHandler: ((event: KeyboardEvent) => void) | undefined;
@@ -107,7 +108,7 @@ export default class TdkSharepointApplicationCustomizer
       );
 
       if (this._topPlaceholder && this._topPlaceholder.domElement) {
-        const topText: string = this.properties.Top || 'TDK KOREA';
+        const topText: string = this.properties.Top || 'TDK Korea';
         this._topPlaceholder.domElement.innerHTML =
             getTopBannerHtml(topText, this._locale);
       }
@@ -274,6 +275,7 @@ export default class TdkSharepointApplicationCustomizer
         existingSection.remove();
       }
 
+      this._clearHeroBannerTimer();
       this._setActiveNav();
       return;
     }
@@ -283,6 +285,13 @@ export default class TdkSharepointApplicationCustomizer
     this._bindNavEvents();
     this._bindLanguageChange();
     this._bindTableauPopupEvents();
+
+    const section: HTMLElement | null =
+        document.getElementById('tdk-product-section') as HTMLElement | null;
+
+    if (section) {
+      this._bindHeroBannerEvents(section);
+    }
   }
 
   private _startPageSyncObserver(): void {
@@ -307,6 +316,15 @@ export default class TdkSharepointApplicationCustomizer
           this._bindLanguageChange();
           this._setActiveNav();
           this._bindTableauPopupEvents();
+
+          const section: HTMLElement | null =
+              document.getElementById('tdk-product-section') as HTMLElement | null;
+
+          if (section) {
+            this._bindHeroBannerEvents(section);
+          }
+        } else {
+          this._clearHeroBannerTimer();
         }
       }, 250);
     });
@@ -318,7 +336,11 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   private _ensureBodySectionRendered(retryCount: number = 0): void {
-    if (document.getElementById('tdk-product-section')) {
+    const existingSection: HTMLElement | null =
+        document.getElementById('tdk-product-section') as HTMLElement | null;
+
+    if (existingSection) {
+      this._bindHeroBannerEvents(existingSection);
       this._bindTableauPopupEvents();
       return;
     }
@@ -347,7 +369,7 @@ export default class TdkSharepointApplicationCustomizer
 
     section.innerHTML = `
       <div class="tdk-product-wrap">
-        ${getHeroBannerHtml(BANNER_URL, this._locale)}
+        ${getHeroBannerHtml(BANNER_URLS, this._locale)}
         ${getTableauSectionHtml(PRODUCT_CARDS, this._locale)}
         ${getQuickLinksHtml(QUICK_LINKS, this._locale)}
         ${getDepartmentSectionHtml(DEPARTMENT_LINKS, this._locale)}
@@ -361,6 +383,7 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     this._bindCardEvents(section);
+    this._bindHeroBannerEvents(section);
     this._bindTableauPopupEvents();
   }
 
@@ -444,6 +467,72 @@ export default class TdkSharepointApplicationCustomizer
         activeCardId = id;
       });
     });
+  }
+
+  private _bindHeroBannerEvents(section: HTMLElement): void {
+    const banner: HTMLElement | null =
+        section.querySelector('#tdk-hero-banner') as HTMLElement | null;
+
+    if (!banner || banner.dataset.tdkBannerBound === 'true') {
+      return;
+    }
+
+    banner.dataset.tdkBannerBound = 'true';
+
+    const images: NodeListOf<HTMLElement> =
+        banner.querySelectorAll('.tdk-hero-banner__image');
+
+    const prevBtn: HTMLElement | null =
+        banner.querySelector('.tdk-hero-banner__arrow--prev') as HTMLElement | null;
+
+    const nextBtn: HTMLElement | null =
+        banner.querySelector('.tdk-hero-banner__arrow--next') as HTMLElement | null;
+
+    if (images.length <= 1) {
+      return;
+    }
+
+    let currentIndex: number = 0;
+
+    const showImage = (nextIndex: number): void => {
+      images.forEach((img: HTMLElement): void => {
+        img.classList.remove('is-active');
+      });
+
+      images[nextIndex].classList.add('is-active');
+      currentIndex = nextIndex;
+    };
+
+    const showNextImage = (): void => {
+      const nextIndex: number =
+          currentIndex === images.length - 1 ? 0 : currentIndex + 1;
+
+      showImage(nextIndex);
+    };
+
+    prevBtn?.addEventListener('click', (): void => {
+      const nextIndex: number =
+          currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+
+      showImage(nextIndex);
+    });
+
+    nextBtn?.addEventListener('click', (): void => {
+      showNextImage();
+    });
+
+    this._clearHeroBannerTimer();
+
+    this._heroBannerTimer = window.setInterval((): void => {
+      showNextImage();
+    }, 3000);
+  }
+
+  private _clearHeroBannerTimer(): void {
+    if (this._heroBannerTimer) {
+      window.clearInterval(this._heroBannerTimer);
+      this._heroBannerTimer = undefined;
+    }
   }
 
   private _bindTableauPopupEvents(): void {
@@ -560,8 +649,10 @@ export default class TdkSharepointApplicationCustomizer
       return;
     }
 
+    this._clearHeroBannerTimer();
+
     wrap.innerHTML = `
-      ${getHeroBannerHtml(BANNER_URL, this._locale)}
+      ${getHeroBannerHtml(BANNER_URLS, this._locale)}
       ${getTableauSectionHtml(PRODUCT_CARDS, this._locale)}
       ${getQuickLinksHtml(QUICK_LINKS, this._locale)}
       ${getDepartmentSectionHtml(DEPARTMENT_LINKS, this._locale)}
@@ -572,6 +663,7 @@ export default class TdkSharepointApplicationCustomizer
 
     if (section) {
       this._bindCardEvents(section);
+      this._bindHeroBannerEvents(section);
     }
 
     this._bindLanguageChange();
@@ -716,6 +808,8 @@ export default class TdkSharepointApplicationCustomizer
       window.clearTimeout(this._syncTimer);
       this._syncTimer = undefined;
     }
+
+    this._clearHeroBannerTimer();
 
     if (this._tableauPopupEscHandler) {
       document.removeEventListener('keydown', this._tableauPopupEscHandler);

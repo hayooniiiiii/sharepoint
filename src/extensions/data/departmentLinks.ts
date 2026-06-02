@@ -133,6 +133,6 @@ export const DEPARTMENT_LINKS: DepartmentLinkSet = [
             en: 'TKR-Machinery Development Department',
             ja: 'TKR-設備開発部'
         },
-        disabled: true
+        url: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR_MDD-11303'
     }
 ];
