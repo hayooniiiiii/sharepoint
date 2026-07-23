@@ -11,7 +11,7 @@ export type LocalizedText = {
 // 대시보드 최하위 링크
 export type ProductLink = {
     text: LocalizedText;
-    url: string;
+    url?: string;
     children?: ProductLink[];
 };
 
@@ -20,7 +20,9 @@ export type ProductLink = {
 export type ProductGroup = {
     title: LocalizedText;
     image?: string;
-    links: ProductLink[];
+    url?: string;
+    links?: ProductLink[];
+
 };
 
 // 대시보드 대분류 안의 품목
@@ -42,7 +44,7 @@ export type ProductCard = {
 // Quick Links 항목
 export type QuickLink = {
     text: LocalizedText;
-    url: string;
+    url?: string;
     icon: string;
 };
 

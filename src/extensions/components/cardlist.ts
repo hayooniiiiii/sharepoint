@@ -40,7 +40,7 @@ const TABLEAU_SECTION_LABELS: Record<Locale, {
     copy: string;
 }> = {
     ko: {
-        dashboard: '대시보드',
+        dashboard: '대시보드&nbsp&nbsp;Dashboard',
         account: '공용 계정',
         popupTitle: '공용 계정',
         scadaTitle: 'SCADA 접속 계정',
@@ -77,24 +77,49 @@ const TABLEAU_SECTION_LABELS: Record<Locale, {
 /**
  * 대시보드 카드 섹션 HTML 생성
  */
-export function getTableauSectionHtml(cards: ProductCard[], locale: Locale): string {
-    const labels = TABLEAU_SECTION_LABELS[locale] || TABLEAU_SECTION_LABELS.ko;
+export function getTableauSectionHtml(
+    cards: ProductCard[],
+    locale: Locale
+): string {
+    const labels =
+        TABLEAU_SECTION_LABELS[locale] ||
+        TABLEAU_SECTION_LABELS.ko;
 
     return `
     <div class="tdk-tableau-section">
       <div class="tdk-section-header">
         <div>
-          <div class="tdk-section-header__title">${labels.dashboard}</div>
+          <div class="tdk-section-header__title">
+            ${labels.dashboard}
+          </div>
         </div>
 
+        <!-- 공용 계정 버튼 숨김 및 비활성화 -->
         <button
           class="tdk-tableau-account-btn"
           id="tdk-tableau-account-btn"
           type="button"
+          hidden
+          disabled
+          aria-hidden="true"
+          tabindex="-1"
         >
           ${labels.account}
         </button>
-      </div>
+      </div>     
+      <!-- 공용 계정 버튼 숨김 및 비활성화 -->
+       <!-- <button
+          class="tdk-tableau-account-btn"
+          id="tdk-tableau-account-btn"
+          type="button"
+          hidden
+          disabled
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          ${labels.account}
+        </button>
+      </div>-->
 
       <div class="tdk-card-row">
         ${cards.map((card: ProductCard) => `
@@ -111,9 +136,15 @@ export function getTableauSectionHtml(cards: ProductCard[], locale: Locale): str
         `).join('')}
       </div>
 
-      <div class="tdk-detail-panel" id="tdk-detail-panel"></div>
+      <div
+        class="tdk-detail-panel"
+        id="tdk-detail-panel"
+      ></div>
 
-      <div class="tdk-tableau-popup" id="tdk-tableau-popup">
+      <div
+        class="tdk-tableau-popup"
+        id="tdk-tableau-popup"
+      >
         <div
           class="tdk-tableau-popup__backdrop"
           id="tdk-tableau-popup-backdrop"
@@ -169,40 +200,42 @@ export function getTableauSectionHtml(cards: ProductCard[], locale: Locale): str
             </button>
           </div>
 
-          <div class="tdk-tableau-popup__title">
-            ${labels.tableauTitle}
-          </div>
+          <div class="tdk-tableau-login-hidden">
+            <div class="tdk-tableau-popup__title">
+              ${labels.tableauTitle}
+            </div>
 
-          <div class="tdk-tableau-popup__row">
-            <span>${labels.id}</span>
+            <div class="tdk-tableau-popup__row">
+              <span>${labels.id}</span>
 
-            <strong class="tdk-tableau-popup__value">
-              keunwoo.park@tdk.com
-            </strong>
+              <strong class="tdk-tableau-popup__value">
+                keunwoo.park@tdk.com
+              </strong>
 
-            <button
-              class="tdk-copy-btn"
-              type="button"
-              data-copy="keunwoo.park@tdk.com"
-            >
-              ${labels.copy}
-            </button>
-          </div>
+              <button
+                class="tdk-copy-btn"
+                type="button"
+                data-copy="keunwoo.park@tdk.com"
+              >
+                ${labels.copy}
+              </button>
+            </div>
 
-          <div class="tdk-tableau-popup__row">
-            <span>${labels.password}</span>
+            <div class="tdk-tableau-popup__row">
+              <span>${labels.password}</span>
 
-            <strong class="tdk-tableau-popup__value">
-              krpkw001!
-            </strong>
+              <strong class="tdk-tableau-popup__value">
+                krpkw001!
+              </strong>
 
-            <button
-              class="tdk-copy-btn"
-              type="button"
-              data-copy="krpkw001!"
-            >
-              ${labels.copy}
-            </button>
+              <button
+                class="tdk-copy-btn"
+                type="button"
+                data-copy="krpkw001!"
+              >
+                ${labels.copy}
+              </button>
+            </div>
           </div>
 
           <div class="tdk-tableau-popup__notice">

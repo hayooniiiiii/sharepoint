@@ -134,5 +134,13 @@ export const DEPARTMENT_LINKS: DepartmentLinkSet = [
             ja: 'TKR-設備開発部'
         },
         url: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR_MDD-11303'
+    },
+    {
+        text: {
+            ko: 'TKR-ACT표준류',
+            en: 'TKR-ACT standards',
+            ja: 'TKR-ACT標準類'
+        },
+        url: 'https://tdkgroup.sharepoint.com/sites/TJP-TKR-TKR-TDK-7687/Shared%20Documents/Forms/AllItems.aspx?e=5%3A04dc74500db24e7eb1dcc2fca4bda8f5&sharingv2=true&fromShare=true&at=9&CID=3ca7d6cc%2D6fd2%2D4004%2D8653%2De8f5b11285b2&FolderCTID=0x01200014D5D1B453792C4090DEF6AE533EDD9D&id=%2Fsites%2FTJP%2DTKR%2DTKR%2DTDK%2D7687%2FShared%20Documents%2FACT%ED%91%9C%EC%A4%80%EB%A5%98&ovuser=7e452255%2D946f%2D4f17%2D800a%2Da0fb6835dc6c%2CHayoon%2EKang%40tdk%2Ecom&TeamsCID=43e411f5%2D1338%2D45fc%2Da98c%2Df46874929d22&OR=Teams%2DHL&CT=1780639456892&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA1MTQxNjcxMyIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D'
     }
 ];

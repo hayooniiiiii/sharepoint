@@ -34,25 +34,32 @@ const DETAIL_PANEL_LABELS: Record<Locale, {
 let isCopyHandlerBound: boolean = false;
 
 function renderFlyoutLinks(
-    links: ProductLink[],
+    links: ProductLink[] | undefined,
     locale: Locale,
     labels: { preparing: string },
     depth: number = 0
 ): string {
-    return links.map((link: ProductLink): string => {
+    const safeLinks: ProductLink[] = links || [];
+
+    return safeLinks.map((link: ProductLink): string => {
         const isDisabled: boolean = link.url === TABLEAU_URL;
         const hasChildren: boolean = !!link.children && link.children.length > 0;
+
+        const href: string =
+            isDisabled || hasChildren || !link.url
+                ? '#'
+                : link.url;
 
         return `
           <div class="tdk-flyout-wrap ${depth > 0 ? 'is-nested' : ''}">
             <a
               class="${depth === 0 ? 'tdk-detail-link' : 'tdk-flyout-item'} ${isDisabled ? 'is-disabled' : ''} ${hasChildren ? 'has-flyout' : ''}"
-              href="${isDisabled ? '#' : link.url}"
-              target="${isDisabled ? '_self' : '_blank'}"
+              href="${href}"
+              target="${isDisabled || hasChildren || !link.url ? '_self' : '_blank'}"
               rel="noopener noreferrer"
               title="${isDisabled ? labels.preparing : ''}"
               aria-disabled="${isDisabled ? 'true' : 'false'}"
-              ${isDisabled ? 'onclick="return false;"' : ''}
+              ${isDisabled || hasChildren || !link.url ? 'onclick="return false;"' : ''}
             >
               <span>${getLocalizedText(link.text, locale)}</span>
 
@@ -69,7 +76,7 @@ function renderFlyoutLinks(
             hasChildren
                 ? `
                       <div class="tdk-flyout-menu">
-                        ${renderFlyoutLinks(link.children!, locale, labels, depth + 1)}
+                        ${renderFlyoutLinks(link.children, locale, labels, depth + 1)}
                       </div>
                     `
                 : ''
@@ -105,38 +112,59 @@ export function renderDetailPanel(card: ProductCard, locale: Locale): void {
             </div>
 
             <div class="tdk-detail-groups">
-              ${visibleGroups.map((group: ProductGroup, groupIndex: number): string => `
-                <div class="tdk-detail-group">
-                  <button
-                    class="tdk-detail-group__title"
-                    type="button"
-                    data-detail-group-index="${itemIndex}-${groupIndex}"
-                  >
-                    <div class="tdk-detail-group__header">
-                      ${
-            group.image
-                ? `<img
-                                  class="tdk-detail-group__img"
-                                  src="${group.image}"
-                                  alt="${getLocalizedText(group.title, locale)}"
-                                />`
-                : ''
-        }
+              ${visibleGroups.map((group: ProductGroup, groupIndex: number): string => {
+            const groupTitle: string = getLocalizedText(group.title, locale);
 
-                      <span>${getLocalizedText(group.title, locale)}</span>
+            if (group.url) {
+                return `
+                        <a
+                          class="tdk-detail-group tdk-detail-group--direct"
+                          href="${group.url}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <div class="tdk-detail-group__title tdk-detail-group__title--direct">
+                            <div class="tdk-detail-group__header">
+                              <span>${groupTitle}</span>
+                            </div>
+                          </div>
+                        </a>
+                      `;
+            }
+
+            return `
+                    <div class="tdk-detail-group">
+                      <button
+                        class="tdk-detail-group__title"
+                        type="button"
+                        data-detail-group-index="${itemIndex}-${groupIndex}"
+                      >
+                        <div class="tdk-detail-group__header">
+                          ${
+                group.image
+                    ? `<img
+                                      class="tdk-detail-group__img"
+                                      src="${group.image}"
+                                      alt="${groupTitle}"
+                                    />`
+                    : ''
+            }
+
+                          <span>${groupTitle}</span>
+                        </div>
+
+                        <span class="arrow">▾</span>
+                      </button>
+
+                      <div
+                        class="tdk-detail-links"
+                        id="tdk-detail-links-${itemIndex}-${groupIndex}"
+                      >
+                        ${renderFlyoutLinks(group.links, locale, labels)}
+                      </div>
                     </div>
-
-                    <span class="arrow">▾</span>
-                  </button>
-
-                  <div
-                    class="tdk-detail-links"
-                    id="tdk-detail-links-${itemIndex}-${groupIndex}"
-                  >
-                    ${renderFlyoutLinks(group.links, locale, labels)}
-                  </div>
-                </div>
-              `).join('')}
+                  `;
+        }).join('')}
             </div>
           </div>
         `;
