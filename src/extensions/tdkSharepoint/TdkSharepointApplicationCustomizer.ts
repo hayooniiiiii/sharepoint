@@ -10,7 +10,7 @@ import * as strings from 'TdkSharepointApplicationCustomizerStrings';
 import {
   LOG_SOURCE,
   BANNER_URLS,
-  POSTER_URL
+  NOTICE_POPUP_IMAGE_URL
 } from '../data/constants';
 
 import { getTopBannerHtml } from '../components/topBanner';
@@ -20,6 +20,12 @@ import { getQuickLinksHtml } from '../components/quickLinksSection';
 import { getTableauSectionHtml } from '../components/cardlist';
 import { getDepartmentSectionHtml } from '../components/departmentSection';
 import { renderDetailPanel } from '../components/detailPanel';
+
+import {
+  getNoticePopupHtml,
+  NOTICE_POPUP_IDS,
+  NOTICE_POPUP_STORAGE_KEY
+} from '../components/noticePopup';
 
 import { PRODUCT_CARDS } from '../data/productCards';
 import { QUICK_LINKS } from '../data/quickLinks';
@@ -42,37 +48,66 @@ export interface ITdkSharepointApplicationCustomizerProperties {
  * 주요 기능:
  * - 상단 헤더 및 하단 푸터 출력
  * - 메인 포털 콘텐츠 출력
- * - 다국어 변경
- * - Tableau 카드 상세 메뉴
- * - Tableau 계정 팝업
+ * - 한국어, 영어, 일본어 변경
  * - 메인 배너 자동 슬라이드
- * - MX 포스터 확대 모달
+ * - Tableau 카드 상세 메뉴
+ * - Tableau 공용계정 팝업
+ * - 메인 화면 공지 팝업
+ * - 오늘 하루 보지 않음
  * - 사용자 권한에 따른 SharePoint 기본 UI 제어
+ * - SharePoint 내부 페이지 이동 감지
  */
 export default class TdkSharepointApplicationCustomizer
     extends BaseApplicationCustomizer<ITdkSharepointApplicationCustomizerProperties> {
 
+  /* =========================
+     1. PLACEHOLDER
+  ========================= */
+
   /**
    * SharePoint 상단·하단 Placeholder
    */
-  private _bottomPlaceholder: PlaceholderContent | undefined;
   private _topPlaceholder: PlaceholderContent | undefined;
+  private _bottomPlaceholder: PlaceholderContent | undefined;
+
+
+  /* =========================
+     2. LANGUAGE
+  ========================= */
 
   /**
-   * 현재 화면 언어
+   * 현재 화면에서 사용하는 언어
    */
   private _locale: Locale = 'ko';
 
-  /**
-   * SharePoint 기본 UI와 페이지 변경 감지용 Observer
-   */
-  private _uiObserver: MutationObserver | undefined;
-  private _pageObserver: MutationObserver | undefined;
+
+  /* =========================
+     3. OBSERVER
+  ========================= */
 
   /**
-   * URL 및 화면 동기화용 Timer
+   * SharePoint 기본 UI 변경 감지용 Observer
+   */
+  private _uiObserver: MutationObserver | undefined;
+
+  /**
+   * SharePoint 페이지 DOM 변경 감지용 Observer
+   */
+  private _pageObserver: MutationObserver | undefined;
+
+
+  /* =========================
+     4. TIMER
+  ========================= */
+
+  /**
+   * URL 변경 확인 Timer
    */
   private _urlWatchTimer: number | undefined;
+
+  /**
+   * 페이지 화면 동기화 Timer
+   */
   private _syncTimer: number | undefined;
 
   /**
@@ -80,13 +115,30 @@ export default class TdkSharepointApplicationCustomizer
    */
   private _heroBannerTimer: number | undefined;
 
+
+  /* =========================
+     5. PAGE STATE
+  ========================= */
+
   /**
-   * 현재 URL
-   *
-   * SharePoint는 페이지 이동 시 전체 새로고침 없이
-   * URL만 변경될 수 있으므로 이전 URL을 저장한다.
+   * SharePoint 내부 페이지 이동을 확인하기 위해
+   * 마지막으로 확인한 URL을 저장한다.
    */
   private _lastUrl: string = window.location.href;
+
+  /**
+   * 현재 메인 화면 방문 중 공지 팝업을
+   * 이미 표시했거나 확인했는지 여부
+   *
+   * DOM Observer가 반복 실행되더라도
+   * 공지 팝업이 계속 다시 열리는 것을 방지한다.
+   */
+  private _noticePopupHandledForCurrentVisit: boolean = false;
+
+
+  /* =========================
+     6. KEYBOARD EVENT
+  ========================= */
 
   /**
    * Tableau 팝업 ESC 키 이벤트
@@ -95,10 +147,15 @@ export default class TdkSharepointApplicationCustomizer
       ((event: KeyboardEvent) => void) | undefined;
 
   /**
-   * 포스터 모달 ESC 키 이벤트
+   * 공지 팝업 ESC 키 이벤트
    */
-  private _posterModalEscHandler:
+  private _noticePopupEscHandler:
       ((event: KeyboardEvent) => void) | undefined;
+
+
+  /* =========================
+     7. INITIALIZE
+  ========================= */
 
   /**
    * Application Customizer 초기 실행
@@ -117,13 +174,13 @@ export default class TdkSharepointApplicationCustomizer
     this._injectStyles();
 
     /**
-     * 페이지가 완전히 출력되기 전에도
-     * 권한에 따라 SharePoint 기본 UI를 우선 숨긴다.
+     * SharePoint 화면이 완전히 출력되기 전에도
+     * 사용자 권한에 맞게 기본 UI 숨김 클래스를 적용한다.
      */
     this._applyPermissionUiImmediately();
 
     /**
-     * SharePoint Placeholder 변경 이벤트 등록
+     * SharePoint 상단·하단 Placeholder 변경 이벤트 등록
      */
     this.context.placeholderProvider.changedEvent.add(
         this,
@@ -131,7 +188,8 @@ export default class TdkSharepointApplicationCustomizer
     );
 
     /**
-     * SharePoint 화면 출력 후 필요한 기능 연결
+     * SharePoint 화면 출력 후
+     * 포털 콘텐츠와 이벤트를 연결한다.
      */
     window.setTimeout((): void => {
       this._applyPermissionUi();
@@ -140,7 +198,9 @@ export default class TdkSharepointApplicationCustomizer
       this._bindLanguageChange();
       this._bindNavEvents();
       this._bindTableauPopupEvents();
-      this._bindPosterModalEvents();
+      this._bindNoticePopupEvents();
+
+      this._showNoticePopupIfNeeded();
 
       this._watchUrlChange();
       this._startPageSyncObserver();
@@ -148,6 +208,11 @@ export default class TdkSharepointApplicationCustomizer
 
     return Promise.resolve();
   }
+
+
+  /* =========================
+     8. LANGUAGE
+  ========================= */
 
   /**
    * 현재 사용할 언어를 확인한다.
@@ -191,6 +256,11 @@ export default class TdkSharepointApplicationCustomizer
     return 'ko';
   }
 
+
+  /* =========================
+     9. PLACEHOLDER
+  ========================= */
+
   /**
    * SharePoint 상단과 하단 Placeholder를 출력한다.
    */
@@ -202,7 +272,9 @@ export default class TdkSharepointApplicationCustomizer
       this._topPlaceholder =
           this.context.placeholderProvider.tryCreateContent(
               PlaceholderName.Top,
-              { onDispose: this._onDispose }
+              {
+                onDispose: this._onDispose
+              }
           );
 
       if (
@@ -213,7 +285,10 @@ export default class TdkSharepointApplicationCustomizer
             this.properties.Top || 'TDK Korea';
 
         this._topPlaceholder.domElement.innerHTML =
-            getTopBannerHtml(topText, this._locale);
+            getTopBannerHtml(
+                topText,
+                this._locale
+            );
       }
     }
 
@@ -224,7 +299,9 @@ export default class TdkSharepointApplicationCustomizer
       this._bottomPlaceholder =
           this.context.placeholderProvider.tryCreateContent(
               PlaceholderName.Bottom,
-              { onDispose: this._onDispose }
+              {
+                onDispose: this._onDispose
+              }
           );
 
       if (
@@ -232,16 +309,25 @@ export default class TdkSharepointApplicationCustomizer
           this._bottomPlaceholder.domElement
       ) {
         const bottomText: string =
-            this.properties.Bottom || '© TDK Korea Portal';
+            this.properties.Bottom ||
+            '© TDK Korea Portal';
 
         this._bottomPlaceholder.domElement.innerHTML =
-            getFooterHtml(bottomText, this._locale);
+            getFooterHtml(
+                bottomText,
+                this._locale
+            );
       }
     }
   };
 
+
+  /* =========================
+     10. USER PERMISSION
+  ========================= */
+
   /**
-   * 현재 로그인한 사용자의 이메일 또는 로그인 이름을 반환한다.
+   * 현재 로그인 사용자의 이메일 또는 로그인 이름을 반환한다.
    */
   private _getCurrentUserEmail(): string {
     const userEmail: string = (
@@ -256,11 +342,15 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   /**
-   * 현재 사용자가 SharePoint 편집 UI를 볼 수 있는 사용자인지 확인한다.
+   * 현재 사용자가 SharePoint 편집 UI를
+   * 볼 수 있는 사용자인지 확인한다.
    */
   private _isAllowedEditor(): boolean {
-    const currentUser: string = this._getCurrentUserEmail();
-    const allowedEmail: string = 'hayoon.kang@tdk.com';
+    const currentUser: string =
+        this._getCurrentUserEmail();
+
+    const allowedEmail: string =
+        'hayoon.kang@tdk.com';
 
     return (
         currentUser === allowedEmail ||
@@ -268,11 +358,18 @@ export default class TdkSharepointApplicationCustomizer
     );
   }
 
+
+  /* =========================
+     11. PAGE CHECK
+  ========================= */
+
   /**
    * 현재 페이지가 게시판 페이지인지 확인한다.
    *
-   * 게시판에서는 SharePoint 기본 UI를 숨기지 않고,
-   * 메인 포털 콘텐츠도 출력하지 않는다.
+   * 게시판에서는:
+   * - SharePoint 기본 UI를 표시한다.
+   * - 메인 포털 콘텐츠를 표시하지 않는다.
+   * - 공지 팝업을 표시하지 않는다.
    */
   private _isBoardPage(): boolean {
     const currentPath: string =
@@ -298,30 +395,39 @@ export default class TdkSharepointApplicationCustomizer
    * SharePoint 기본 UI를 숨겨야 하는지 확인한다.
    */
   private _shouldHideSharePointUi(): boolean {
-    /**
-     * 게시판 페이지에서는 기본 UI를 표시한다.
-     */
     if (this._isBoardPage()) {
       return false;
     }
 
-    /**
-     * 허용된 편집자가 아닌 경우 기본 UI를 숨긴다.
-     */
     return !this._isAllowedEditor();
   }
 
+
+  /* =========================
+     12. SHAREPOINT UI
+  ========================= */
+
   /**
-   * 초기 화면이 출력되기 전에
-   * HTML과 BODY에 UI 숨김 클래스를 즉시 적용한다.
+   * 페이지가 완전히 출력되기 전에
+   * SharePoint UI 숨김 클래스를 우선 적용한다.
    */
   private _applyPermissionUiImmediately(): void {
     if (this._shouldHideSharePointUi()) {
-      document.documentElement.classList.add('tdk-hide-sp-ui');
-      document.body.classList.add('tdk-hide-sp-ui');
+      document.documentElement.classList.add(
+          'tdk-hide-sp-ui'
+      );
+
+      document.body.classList.add(
+          'tdk-hide-sp-ui'
+      );
     } else {
-      document.documentElement.classList.remove('tdk-hide-sp-ui');
-      document.body.classList.remove('tdk-hide-sp-ui');
+      document.documentElement.classList.remove(
+          'tdk-hide-sp-ui'
+      );
+
+      document.body.classList.remove(
+          'tdk-hide-sp-ui'
+      );
     }
   }
 
@@ -331,14 +437,24 @@ export default class TdkSharepointApplicationCustomizer
    */
   private _applyPermissionUi(): void {
     if (this._shouldHideSharePointUi()) {
-      document.documentElement.classList.add('tdk-hide-sp-ui');
-      document.body.classList.add('tdk-hide-sp-ui');
+      document.documentElement.classList.add(
+          'tdk-hide-sp-ui'
+      );
+
+      document.body.classList.add(
+          'tdk-hide-sp-ui'
+      );
 
       this._hideNativeSharePointUi();
       this._observeAndHideNativeUi();
     } else {
-      document.documentElement.classList.remove('tdk-hide-sp-ui');
-      document.body.classList.remove('tdk-hide-sp-ui');
+      document.documentElement.classList.remove(
+          'tdk-hide-sp-ui'
+      );
+
+      document.body.classList.remove(
+          'tdk-hide-sp-ui'
+      );
 
       this._restoreNativeSharePointUi();
       this._disconnectUiObserver();
@@ -346,7 +462,8 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   /**
-   * SharePoint 기본 헤더, 명령 모음, 좌측 메뉴 등을 숨긴다.
+   * SharePoint 기본 헤더, 명령 모음,
+   * 좌측 메뉴 등을 숨긴다.
    */
   private _hideNativeSharePointUi(): void {
     const selectors: string[] = [
@@ -369,7 +486,8 @@ export default class TdkSharepointApplicationCustomizer
           document.querySelectorAll(selector);
 
       elements.forEach((el: Element): void => {
-        const htmlEl: HTMLElement = el as HTMLElement;
+        const htmlEl: HTMLElement =
+            el as HTMLElement;
 
         htmlEl.style.setProperty(
             'display',
@@ -387,7 +505,7 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   /**
-   * 이전에 숨겼던 SharePoint 기본 UI를 복원한다.
+   * 이전에 숨긴 SharePoint 기본 UI를 복원한다.
    */
   private _restoreNativeSharePointUi(): void {
     const selectors: string[] = [
@@ -410,7 +528,8 @@ export default class TdkSharepointApplicationCustomizer
           document.querySelectorAll(selector);
 
       elements.forEach((el: Element): void => {
-        const htmlEl: HTMLElement = el as HTMLElement;
+        const htmlEl: HTMLElement =
+            el as HTMLElement;
 
         htmlEl.style.removeProperty('display');
         htmlEl.style.removeProperty('visibility');
@@ -419,19 +538,20 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   /**
-   * SharePoint가 화면 요소를 다시 생성하는 경우에도
-   * 기본 UI가 다시 나타나지 않도록 DOM 변경을 감시한다.
+   * SharePoint가 화면 요소를 다시 생성하더라도
+   * 숨긴 기본 UI가 다시 나타나지 않도록 DOM을 감시한다.
    */
   private _observeAndHideNativeUi(): void {
     if (this._uiObserver) {
       return;
     }
 
-    this._uiObserver = new MutationObserver((): void => {
-      if (this._shouldHideSharePointUi()) {
-        this._hideNativeSharePointUi();
-      }
-    });
+    this._uiObserver =
+        new MutationObserver((): void => {
+          if (this._shouldHideSharePointUi()) {
+            this._hideNativeSharePointUi();
+          }
+        });
 
     this._uiObserver.observe(document.body, {
       childList: true,
@@ -449,11 +569,17 @@ export default class TdkSharepointApplicationCustomizer
     }
   }
 
+
+  /* =========================
+     13. PAGE SYNCHRONIZATION
+  ========================= */
+
   /**
    * 현재 페이지에 맞게 포털 화면을 동기화한다.
    */
   private _syncPageUi(): void {
-    const isBoardPage: boolean = this._isBoardPage();
+    const isBoardPage: boolean =
+        this._isBoardPage();
 
     const existingSection: HTMLElement | null =
         document.getElementById(
@@ -461,14 +587,18 @@ export default class TdkSharepointApplicationCustomizer
         ) as HTMLElement | null;
 
     /**
-     * 게시판 페이지인 경우
-     *
-     * - 메인 포털 콘텐츠 제거
-     * - 포스터 모달 닫기
-     * - 배너 자동 슬라이드 종료
+     * 게시판 페이지 처리
      */
     if (isBoardPage) {
-      this._closePosterModal();
+      /**
+       * 열려 있는 공지 팝업을 닫는다.
+       *
+       * 오늘 하루 보지 않음 설정은 저장하지 않는다.
+       */
+      this._closeNoticePopup(
+          false,
+          false
+      );
 
       if (existingSection) {
         existingSection.remove();
@@ -481,14 +611,15 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     /**
-     * 메인 페이지인 경우 포털 콘텐츠와 이벤트 연결
+     * 메인 페이지 처리
      */
     this._ensureBodySectionRendered();
+
     this._setActiveNav();
     this._bindNavEvents();
     this._bindLanguageChange();
     this._bindTableauPopupEvents();
-    this._bindPosterModalEvents();
+    this._bindNoticePopupEvents();
 
     const section: HTMLElement | null =
         document.getElementById(
@@ -498,6 +629,8 @@ export default class TdkSharepointApplicationCustomizer
     if (section) {
       this._bindHeroBannerEvents(section);
     }
+
+    this._showNoticePopupIfNeeded();
   }
 
   /**
@@ -509,47 +642,59 @@ export default class TdkSharepointApplicationCustomizer
       this._pageObserver.disconnect();
     }
 
-    this._pageObserver = new MutationObserver((): void => {
-      /**
-       * DOM 변경이 연속으로 발생할 수 있으므로
-       * 기존 Timer를 제거한 후 다시 실행한다.
-       */
-      if (this._syncTimer) {
-        window.clearTimeout(this._syncTimer);
-      }
-
-      this._syncTimer = window.setTimeout((): void => {
-        this._applyPermissionUi();
-
-        if (!this._isBoardPage()) {
-          if (
-              !document.getElementById(
-                  'tdk-product-section'
-              )
-          ) {
-            this._ensureBodySectionRendered();
+    this._pageObserver =
+        new MutationObserver((): void => {
+          /**
+           * DOM 변경이 연속으로 발생할 수 있으므로
+           * 기존 Timer를 제거하고 다시 등록한다.
+           */
+          if (this._syncTimer) {
+            window.clearTimeout(
+                this._syncTimer
+            );
           }
 
-          this._bindNavEvents();
-          this._bindLanguageChange();
-          this._setActiveNav();
-          this._bindTableauPopupEvents();
-          this._bindPosterModalEvents();
+          this._syncTimer =
+              window.setTimeout((): void => {
+                this._applyPermissionUi();
 
-          const section: HTMLElement | null =
-              document.getElementById(
-                  'tdk-product-section'
-              ) as HTMLElement | null;
+                if (!this._isBoardPage()) {
+                  if (
+                      !document.getElementById(
+                          'tdk-product-section'
+                      )
+                  ) {
+                    this._ensureBodySectionRendered();
+                  }
 
-          if (section) {
-            this._bindHeroBannerEvents(section);
-          }
-        } else {
-          this._closePosterModal();
-          this._clearHeroBannerTimer();
-        }
-      }, 250);
-    });
+                  this._bindNavEvents();
+                  this._bindLanguageChange();
+                  this._setActiveNav();
+                  this._bindTableauPopupEvents();
+                  this._bindNoticePopupEvents();
+
+                  const section: HTMLElement | null =
+                      document.getElementById(
+                          'tdk-product-section'
+                      ) as HTMLElement | null;
+
+                  if (section) {
+                    this._bindHeroBannerEvents(
+                        section
+                    );
+                  }
+
+                  this._showNoticePopupIfNeeded();
+                } else {
+                  this._closeNoticePopup(
+                      false,
+                      false
+                  );
+
+                  this._clearHeroBannerTimer();
+                }
+              }, 250);
+        });
 
     this._pageObserver.observe(document.body, {
       childList: true,
@@ -557,11 +702,16 @@ export default class TdkSharepointApplicationCustomizer
     });
   }
 
+
+  /* =========================
+     14. MAIN BODY RENDER
+  ========================= */
+
   /**
-   * 메인 포털 콘텐츠가 없으면 생성한다.
+   * 메인 포털 콘텐츠가 없으면 새로 생성한다.
    *
-   * SharePoint Canvas가 아직 생성되지 않은 경우
-   * 최대 40회까지 다시 시도한다.
+   * SharePoint Canvas가 아직 만들어지지 않은 경우
+   * 최대 40회까지 0.3초 간격으로 다시 시도한다.
    */
   private _ensureBodySectionRendered(
       retryCount: number = 0
@@ -572,19 +722,24 @@ export default class TdkSharepointApplicationCustomizer
         ) as HTMLElement | null;
 
     /**
-     * 포털 콘텐츠가 이미 있으면
+     * 포털 콘텐츠가 이미 존재하면
      * HTML을 다시 만들지 않고 이벤트만 연결한다.
      */
     if (existingSection) {
-      this._bindHeroBannerEvents(existingSection);
+      this._bindHeroBannerEvents(
+          existingSection
+      );
+
       this._bindTableauPopupEvents();
-      this._bindPosterModalEvents();
+      this._bindNoticePopupEvents();
+      this._showNoticePopupIfNeeded();
 
       return;
     }
 
     /**
-     * 메인 콘텐츠를 추가할 SharePoint 영역 확인
+     * 메인 포털 콘텐츠를 추가할
+     * SharePoint 영역을 찾는다.
      */
     const target: HTMLElement | null =
         document.querySelector(
@@ -626,22 +781,26 @@ export default class TdkSharepointApplicationCustomizer
 
     section.id = 'tdk-product-section';
     section.className = 'tdk-product-section';
-    section.setAttribute('data-tdk-custom', 'true');
+
+    section.setAttribute(
+        'data-tdk-custom',
+        'true'
+    );
 
     /**
      * 메인 포털 HTML 구성
      *
      * 구성:
-     * 1. 배너 슬라이드와 MX 포스터
+     * 1. 메인 배너 슬라이드
      * 2. Tableau 대시보드 카드
      * 3. 어플리케이션 바로가기
      * 4. 부문 채널
+     * 5. 메인 공지 팝업
      */
     section.innerHTML = `
       <div class="tdk-product-wrap">
         ${getHeroBannerHtml(
         BANNER_URLS,
-        POSTER_URL,
         this._locale
     )}
 
@@ -659,11 +818,17 @@ export default class TdkSharepointApplicationCustomizer
         DEPARTMENT_LINKS,
         this._locale
     )}
+
+        ${getNoticePopupHtml(
+        NOTICE_POPUP_IMAGE_URL,
+        this._locale
+    )}
       </div>
     `;
 
     /**
-     * SharePoint 콘텐츠의 가장 위쪽에 포털 Section 추가
+     * SharePoint 콘텐츠 영역 가장 위쪽에
+     * 포털 Section을 추가한다.
      */
     if (target.firstChild) {
       target.insertBefore(
@@ -675,13 +840,24 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     /**
-     * 생성된 화면에 이벤트 연결
+     * 생성된 화면에 이벤트를 연결한다.
      */
     this._bindCardEvents(section);
     this._bindHeroBannerEvents(section);
     this._bindTableauPopupEvents();
-    this._bindPosterModalEvents();
+    this._bindNoticePopupEvents();
+
+    /**
+     * 오늘 하루 보지 않음 여부를 확인한 후
+     * 필요한 경우 공지 팝업을 표시한다.
+     */
+    this._showNoticePopupIfNeeded();
   }
+
+
+  /* =========================
+     15. PRODUCT CARD
+  ========================= */
 
   /**
    * 카드 ID로 PRODUCT_CARDS의 데이터를 찾는다.
@@ -689,7 +865,8 @@ export default class TdkSharepointApplicationCustomizer
   private _getProductCardById(
       id: string
   ): ProductCard | undefined {
-    let selected: ProductCard | undefined = undefined;
+    let selected: ProductCard | undefined =
+        undefined;
 
     for (const card of PRODUCT_CARDS) {
       if (card.id === id) {
@@ -708,99 +885,145 @@ export default class TdkSharepointApplicationCustomizer
       section: HTMLElement
   ): void {
     const buttons: NodeListOf<HTMLElement> =
-        section.querySelectorAll('.tdk-main-card');
+        section.querySelectorAll(
+            '.tdk-main-card'
+        );
 
     const cardRow: HTMLElement | null =
-        section.querySelector('.tdk-card-row');
+        section.querySelector(
+            '.tdk-card-row'
+        );
 
     const detailPanel: HTMLElement | null =
-        section.querySelector('#tdk-detail-panel');
+        section.querySelector(
+            '#tdk-detail-panel'
+        );
 
     let activeCardId: string | null = null;
 
-    buttons.forEach((btn: HTMLElement): void => {
-      /**
-       * 동일한 버튼에 이벤트가 중복으로 연결되는 것을 방지한다.
-       */
-      if (btn.dataset.tdkCardBound === 'true') {
-        return;
-      }
-
-      btn.dataset.tdkCardBound = 'true';
-
-      btn.addEventListener('click', (): void => {
-        const id: string | null =
-            btn.getAttribute('data-card-id');
-
-        if (!id || !detailPanel) {
-          return;
-        }
-
-        /**
-         * 현재 열린 카드를 다시 클릭한 경우 상세 패널을 닫는다.
-         */
-        if (activeCardId === id) {
-          buttons.forEach((el: HTMLElement): void => {
-            el.classList.remove('is-active');
-          });
-
-          if (cardRow) {
-            cardRow.classList.remove('has-active');
+    buttons.forEach(
+        (btn: HTMLElement): void => {
+          /**
+           * 이벤트 중복 연결 방지
+           */
+          if (
+              btn.dataset.tdkCardBound ===
+              'true'
+          ) {
+            return;
           }
 
-          detailPanel.classList.remove('is-visible');
+          btn.dataset.tdkCardBound = 'true';
 
-          window.setTimeout((): void => {
-            if (
-                !detailPanel.classList.contains(
-                    'is-visible'
-                )
-            ) {
-              detailPanel.innerHTML = '';
-            }
-          }, 320);
+          btn.addEventListener(
+              'click',
+              (): void => {
+                const id: string | null =
+                    btn.getAttribute(
+                        'data-card-id'
+                    );
 
-          activeCardId = null;
+                if (!id || !detailPanel) {
+                  return;
+                }
 
-          return;
+                /**
+                 * 현재 열린 카드를 다시 클릭하면
+                 * 상세 패널을 닫는다.
+                 */
+                if (activeCardId === id) {
+                  buttons.forEach(
+                      (el: HTMLElement): void => {
+                        el.classList.remove(
+                            'is-active'
+                        );
+                      }
+                  );
+
+                  if (cardRow) {
+                    cardRow.classList.remove(
+                        'has-active'
+                    );
+                  }
+
+                  detailPanel.classList.remove(
+                      'is-visible'
+                  );
+
+                  window.setTimeout(
+                      (): void => {
+                        if (
+                            !detailPanel.classList.contains(
+                                'is-visible'
+                            )
+                        ) {
+                          detailPanel.innerHTML = '';
+                        }
+                      },
+                      320
+                  );
+
+                  activeCardId = null;
+
+                  return;
+                }
+
+                /**
+                 * 클릭한 카드 데이터를 찾는다.
+                 */
+                const selected:
+                    ProductCard | undefined =
+                    this._getProductCardById(id);
+
+                if (!selected) {
+                  return;
+                }
+
+                /**
+                 * 선택한 카드의 상세 메뉴를 출력한다.
+                 */
+                renderDetailPanel(
+                    selected,
+                    this._locale
+                );
+
+                buttons.forEach(
+                    (el: HTMLElement): void => {
+                      el.classList.remove(
+                          'is-active'
+                      );
+                    }
+                );
+
+                btn.classList.add(
+                    'is-active'
+                );
+
+                if (cardRow) {
+                  cardRow.classList.add(
+                      'has-active'
+                  );
+                }
+
+                window.requestAnimationFrame(
+                    (): void => {
+                      detailPanel.classList.add(
+                          'is-visible'
+                      );
+                    }
+                );
+
+                activeCardId = id;
+              }
+          );
         }
-
-        /**
-         * 클릭한 카드의 데이터를 찾는다.
-         */
-        const selected: ProductCard | undefined =
-            this._getProductCardById(id);
-
-        if (!selected) {
-          return;
-        }
-
-        /**
-         * 선택한 카드의 상세 메뉴를 출력한다.
-         */
-        renderDetailPanel(
-            selected,
-            this._locale
-        );
-
-        buttons.forEach((el: HTMLElement): void => {
-          el.classList.remove('is-active');
-        });
-
-        btn.classList.add('is-active');
-
-        if (cardRow) {
-          cardRow.classList.add('has-active');
-        }
-
-        window.requestAnimationFrame((): void => {
-          detailPanel.classList.add('is-visible');
-        });
-
-        activeCardId = id;
-      });
-    });
+    );
   }
+
+
+  /* =========================
+     16. HERO BANNER
+  ========================= */
 
   /**
    * 메인 배너 슬라이드 이벤트를 연결한다.
@@ -808,7 +1031,7 @@ export default class TdkSharepointApplicationCustomizer
    * 기능:
    * - 이전 배너 이동
    * - 다음 배너 이동
-   * - 3초마다 자동 이동
+   * - 3초마다 다음 배너 자동 표시
    */
   private _bindHeroBannerEvents(
       section: HTMLElement
@@ -823,7 +1046,8 @@ export default class TdkSharepointApplicationCustomizer
      */
     if (
         !banner ||
-        banner.dataset.tdkBannerBound === 'true'
+        banner.dataset.tdkBannerBound ===
+        'true'
     ) {
       return;
     }
@@ -846,7 +1070,8 @@ export default class TdkSharepointApplicationCustomizer
         ) as HTMLElement | null;
 
     /**
-     * 배너 이미지가 1장 이하이면 슬라이드를 실행하지 않는다.
+     * 배너 이미지가 1장 이하이면
+     * 슬라이드 기능을 실행하지 않는다.
      */
     if (images.length <= 1) {
       return;
@@ -860,16 +1085,23 @@ export default class TdkSharepointApplicationCustomizer
     const showImage = (
         nextIndex: number
     ): void => {
-      images.forEach((img: HTMLElement): void => {
-        img.classList.remove('is-active');
-      });
+      images.forEach(
+          (img: HTMLElement): void => {
+            img.classList.remove(
+                'is-active'
+            );
+          }
+      );
 
-      images[nextIndex].classList.add('is-active');
+      images[nextIndex].classList.add(
+          'is-active'
+      );
+
       currentIndex = nextIndex;
     };
 
     /**
-     * 다음 배너 이미지를 표시한다.
+     * 다음 순서의 배너 이미지를 표시한다.
      */
     const showNextImage = (): void => {
       const nextIndex: number =
@@ -881,30 +1113,37 @@ export default class TdkSharepointApplicationCustomizer
     };
 
     /**
-     * 이전 버튼 클릭
+     * 이전 버튼 클릭 이벤트
      */
     if (prevBtn) {
-      prevBtn.addEventListener('click', (): void => {
-        const nextIndex: number =
-            currentIndex === 0
-                ? images.length - 1
-                : currentIndex - 1;
+      prevBtn.addEventListener(
+          'click',
+          (): void => {
+            const nextIndex: number =
+                currentIndex === 0
+                    ? images.length - 1
+                    : currentIndex - 1;
 
-        showImage(nextIndex);
-      });
+            showImage(nextIndex);
+          }
+      );
     }
 
     /**
-     * 다음 버튼 클릭
+     * 다음 버튼 클릭 이벤트
      */
     if (nextBtn) {
-      nextBtn.addEventListener('click', (): void => {
-        showNextImage();
-      });
+      nextBtn.addEventListener(
+          'click',
+          (): void => {
+            showNextImage();
+          }
+      );
     }
 
     /**
-     * 기존 자동 슬라이드 Timer 제거 후 다시 시작
+     * 기존 Timer 제거 후
+     * 3초 간격 자동 슬라이드를 시작한다.
      */
     this._clearHeroBannerTimer();
 
@@ -927,159 +1166,311 @@ export default class TdkSharepointApplicationCustomizer
     }
   }
 
+
+  /* =========================
+     17. NOTICE POPUP STORAGE
+  ========================= */
+
   /**
-   * 포스터 모달을 닫는다.
-   *
-   * 처리 내용:
-   * - 모달의 is-open 클래스 제거
-   * - 접근성 상태 변경
-   * - BODY 스크롤 잠금 해제
+   * localStorage에 저장된
+   * 공지 팝업 숨김 종료 시간을 반환한다.
    */
-  private _closePosterModal(): void {
-    const modal: HTMLElement | null =
+  private _getNoticePopupHiddenUntil(): number {
+    try {
+      const storedValue: string | null =
+          window.localStorage.getItem(
+              NOTICE_POPUP_STORAGE_KEY
+          );
+
+      if (!storedValue) {
+        return 0;
+      }
+
+      const hiddenUntil: number =
+          Number(storedValue);
+
+      /**
+       * 저장된 값이 숫자가 아니면 삭제한다.
+       */
+      if (isNaN(hiddenUntil)) {
+        window.localStorage.removeItem(
+            NOTICE_POPUP_STORAGE_KEY
+        );
+
+        return 0;
+      }
+
+      return hiddenUntil;
+    } catch (error) {
+      /**
+       * 브라우저 정책 등으로 localStorage 사용이
+       * 불가능한 경우에는 숨김 설정을 적용하지 않는다.
+       */
+      console.warn(
+          '[TDK Notice Popup] Failed to read localStorage.',
+          error
+      );
+
+      return 0;
+    }
+  }
+
+  /**
+   * 다음 날 00시까지 공지 팝업을 숨기도록 저장한다.
+   */
+  private _hideNoticePopupUntilTomorrow(): void {
+    try {
+      const tomorrow: Date = new Date();
+
+      /**
+       * 현재 날짜의 다음 날 00:00:00으로 설정한다.
+       */
+      tomorrow.setHours(
+          24,
+          0,
+          0,
+          0
+      );
+
+      window.localStorage.setItem(
+          NOTICE_POPUP_STORAGE_KEY,
+          tomorrow.getTime().toString()
+      );
+    } catch (error) {
+      console.warn(
+          '[TDK Notice Popup] Failed to save localStorage.',
+          error
+      );
+    }
+  }
+
+
+  /* =========================
+     18. NOTICE POPUP OPEN/CLOSE
+  ========================= */
+
+  /**
+   * 공지 팝업을 연다.
+   */
+  private _openNoticePopup(): void {
+    const popup: HTMLElement | null =
         document.getElementById(
-            'tdk-poster-modal'
+            NOTICE_POPUP_IDS.popup
         ) as HTMLElement | null;
 
-    const openBtn: HTMLElement | null =
+    if (!popup) {
+      return;
+    }
+
+    popup.classList.add('is-open');
+
+    popup.setAttribute(
+        'aria-hidden',
+        'false'
+    );
+
+    document.body.classList.add(
+        'tdk-notice-popup-open'
+    );
+
+    this._noticePopupHandledForCurrentVisit =
+        true;
+
+    /**
+     * 팝업이 열린 후 닫기 버튼으로 포커스를 이동한다.
+     */
+    window.setTimeout((): void => {
+      const closeButton: HTMLElement | null =
+          document.getElementById(
+              NOTICE_POPUP_IDS.closeIcon
+          ) as HTMLElement | null;
+
+      if (closeButton) {
+        closeButton.focus();
+      }
+    }, 0);
+  }
+
+  /**
+   * 오늘 하루 보지 않음 상태와 현재 방문 상태를 확인하여
+   * 필요한 경우에만 공지 팝업을 표시한다.
+   */
+  private _showNoticePopupIfNeeded(): void {
+    /**
+     * 게시판에서는 공지 팝업을 표시하지 않는다.
+     */
+    if (this._isBoardPage()) {
+      return;
+    }
+
+    /**
+     * 현재 방문 중 이미 팝업을 처리했다면
+     * 다시 표시하지 않는다.
+     */
+    if (
+        this._noticePopupHandledForCurrentVisit
+    ) {
+      return;
+    }
+
+    const popup: HTMLElement | null =
         document.getElementById(
-            'tdk-poster-open'
+            NOTICE_POPUP_IDS.popup
         ) as HTMLElement | null;
 
-    if (modal) {
-      modal.classList.remove('is-open');
-      modal.setAttribute(
+    if (!popup) {
+      return;
+    }
+
+    const hiddenUntil: number =
+        this._getNoticePopupHiddenUntil();
+
+    /**
+     * 현재 시간이 숨김 종료 시간보다 이전이면
+     * 오늘은 팝업을 표시하지 않는다.
+     */
+    if (
+        hiddenUntil > 0 &&
+        Date.now() < hiddenUntil
+    ) {
+      this._noticePopupHandledForCurrentVisit =
+          true;
+
+      return;
+    }
+
+    /**
+     * 숨김 기간이 지났으면 기존 저장값을 제거한다.
+     */
+    if (
+        hiddenUntil > 0 &&
+        Date.now() >= hiddenUntil
+    ) {
+      try {
+        window.localStorage.removeItem(
+            NOTICE_POPUP_STORAGE_KEY
+        );
+      } catch (error) {
+        console.warn(
+            '[TDK Notice Popup] Failed to remove expired value.',
+            error
+        );
+      }
+    }
+
+    this._openNoticePopup();
+  }
+
+  /**
+   * 공지 팝업을 닫는다.
+   *
+   * @param saveTodayPreference
+   * 체크박스가 선택된 경우 오늘 하루 숨김 상태를 저장할지 여부
+   *
+   * @param markHandled
+   * 현재 방문에서 팝업을 이미 처리한 것으로 표시할지 여부
+   */
+  private _closeNoticePopup(
+      saveTodayPreference: boolean = true,
+      markHandled: boolean = true
+  ): void {
+    const popup: HTMLElement | null =
+        document.getElementById(
+            NOTICE_POPUP_IDS.popup
+        ) as HTMLElement | null;
+
+    const checkbox: HTMLInputElement | null =
+        document.getElementById(
+            NOTICE_POPUP_IDS.todayCheckbox
+        ) as HTMLInputElement | null;
+
+    /**
+     * 사용자가 오늘 하루 보지 않음을 선택했다면
+     * 다음 날 00시까지 숨김 상태를 저장한다.
+     */
+    if (
+        saveTodayPreference &&
+        checkbox &&
+        checkbox.checked
+    ) {
+      this._hideNoticePopupUntilTomorrow();
+    }
+
+    if (popup) {
+      popup.classList.remove('is-open');
+
+      popup.setAttribute(
           'aria-hidden',
           'true'
       );
     }
 
-    if (openBtn) {
-      openBtn.setAttribute(
-          'aria-expanded',
-          'false'
-      );
-    }
-
     document.body.classList.remove(
-        'tdk-poster-modal-open'
+        'tdk-notice-popup-open'
     );
+
+    if (markHandled) {
+      this._noticePopupHandledForCurrentVisit =
+          true;
+    }
   }
 
+
+  /* =========================
+     19. NOTICE POPUP EVENT
+  ========================= */
+
   /**
-   * MX 포스터 모달 이벤트를 연결한다.
+   * 공지 팝업 닫기 이벤트를 연결한다.
    *
-   * 기능:
-   * - 포스터 카드 클릭 시 모달 열기
-   * - 닫기 버튼 클릭 시 닫기
-   * - 배경 클릭 시 닫기
-   * - ESC 키 입력 시 닫기
+   * 닫기 대상:
+   * - 우측 상단 X 버튼
+   * - 하단 닫기 버튼
+   * - 팝업 바깥 배경
+   * - ESC 키
    */
-  private _bindPosterModalEvents(): void {
-    const openBtn: HTMLElement | null =
+  private _bindNoticePopupEvents(): void {
+    const popup: HTMLElement | null =
         document.getElementById(
-            'tdk-poster-open'
+            NOTICE_POPUP_IDS.popup
         ) as HTMLElement | null;
 
-    const modal: HTMLElement | null =
-        document.getElementById(
-            'tdk-poster-modal'
-        ) as HTMLElement | null;
-
-    /**
-     * 포스터 카드 또는 모달이 없으면 이벤트를 연결하지 않는다.
-     */
-    if (!openBtn || !modal) {
+    if (!popup) {
       return;
     }
 
     /**
-     * 포스터 카드 클릭 이벤트
+     * data-notice-close="true"가 적용된 요소에
+     * 닫기 이벤트를 연결한다.
      */
-    if (
-        openBtn.dataset.tdkPosterBound !== 'true'
-    ) {
-      openBtn.dataset.tdkPosterBound = 'true';
-
-      openBtn.addEventListener(
-          'click',
-          (): void => {
-            modal.classList.add('is-open');
-
-            modal.setAttribute(
-                'aria-hidden',
-                'false'
-            );
-
-            openBtn.setAttribute(
-                'aria-expanded',
-                'true'
-            );
-
-            /**
-             * 모달이 열렸을 때 배경 화면의 스크롤을 막는다.
-             */
-            document.body.classList.add(
-                'tdk-poster-modal-open'
-            );
-
-            /**
-             * 모달이 열린 후 닫기 버튼으로 포커스를 이동한다.
-             */
-            window.setTimeout((): void => {
-              const closeButton: HTMLElement | null =
-                  modal.querySelector(
-                      '.tdk-poster-modal__close'
-                  ) as HTMLElement | null;
-
-              if (closeButton) {
-                closeButton.focus();
-              }
-            }, 0);
-          }
-      );
-    }
-
-    /**
-     * data-poster-close="true"가 있는 요소에
-     * 모달 닫기 이벤트를 연결한다.
-     *
-     * 적용 대상:
-     * - 닫기 버튼
-     * - 모달 뒤쪽 배경
-     */
-    const closeElements: NodeListOf<HTMLElement> =
-        modal.querySelectorAll(
-            '[data-poster-close="true"]'
+    const closeElements:
+        NodeListOf<HTMLElement> =
+        popup.querySelectorAll(
+            '[data-notice-close="true"]'
         );
 
     closeElements.forEach(
         (element: HTMLElement): void => {
+          /**
+           * 이벤트 중복 연결 방지
+           */
           if (
-              element.dataset.tdkPosterCloseBound ===
+              element.dataset.tdkNoticeCloseBound ===
               'true'
           ) {
             return;
           }
 
-          element.dataset.tdkPosterCloseBound = 'true';
+          element.dataset.tdkNoticeCloseBound =
+              'true';
 
           element.addEventListener(
               'click',
               (): void => {
-                this._closePosterModal();
-
-                /**
-                 * 모달을 닫은 후 포스터 카드로 포커스를 돌린다.
-                 */
-                const currentOpenBtn: HTMLElement | null =
-                    document.getElementById(
-                        'tdk-poster-open'
-                    ) as HTMLElement | null;
-
-                if (currentOpenBtn) {
-                  currentOpenBtn.focus();
-                }
+                this._closeNoticePopup(
+                    true,
+                    true
+                );
               }
           );
         }
@@ -1088,54 +1479,48 @@ export default class TdkSharepointApplicationCustomizer
     /**
      * ESC 키 이벤트는 문서 전체에 한 번만 연결한다.
      */
-    if (!this._posterModalEscHandler) {
-      this._posterModalEscHandler =
+    if (!this._noticePopupEscHandler) {
+      this._noticePopupEscHandler =
           (event: KeyboardEvent): void => {
             if (event.key !== 'Escape') {
               return;
             }
 
-            const currentModal: HTMLElement | null =
+            const currentPopup:
+                HTMLElement | null =
                 document.getElementById(
-                    'tdk-poster-modal'
+                    NOTICE_POPUP_IDS.popup
                 ) as HTMLElement | null;
 
-            /**
-             * 모달이 없거나 열려 있지 않으면 아무 작업도 하지 않는다.
-             */
             if (
-                !currentModal ||
-                !currentModal.classList.contains(
+                !currentPopup ||
+                !currentPopup.classList.contains(
                     'is-open'
                 )
             ) {
               return;
             }
 
-            this._closePosterModal();
-
-            /**
-             * ESC로 닫은 후 포스터 카드에 포커스를 돌린다.
-             */
-            const currentOpenBtn: HTMLElement | null =
-                document.getElementById(
-                    'tdk-poster-open'
-                ) as HTMLElement | null;
-
-            if (currentOpenBtn) {
-              currentOpenBtn.focus();
-            }
+            this._closeNoticePopup(
+                true,
+                true
+            );
           };
 
       document.addEventListener(
           'keydown',
-          this._posterModalEscHandler
+          this._noticePopupEscHandler
       );
     }
   }
 
+
+  /* =========================
+     20. TABLEAU POPUP
+  ========================= */
+
   /**
-   * Tableau 계정 팝업 이벤트를 연결한다.
+   * Tableau 공용계정 팝업 이벤트를 연결한다.
    */
   private _bindTableauPopupEvents(): void {
     const openBtn: HTMLElement | null =
@@ -1163,24 +1548,31 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     /**
-     * Tableau 계정 팝업 열기
+     * Tableau 팝업 열기
      */
     if (
-        openBtn.dataset.tdkPopupBound !== 'true'
+        openBtn.dataset.tdkPopupBound !==
+        'true'
     ) {
-      openBtn.dataset.tdkPopupBound = 'true';
+      openBtn.dataset.tdkPopupBound =
+          'true';
 
-      openBtn.addEventListener('click', (): void => {
-        popup.classList.add('is-open');
+      openBtn.addEventListener(
+          'click',
+          (): void => {
+            popup.classList.add(
+                'is-open'
+            );
 
-        document.body.classList.add(
-            'tdk-tableau-popup-open'
-        );
-      });
+            document.body.classList.add(
+                'tdk-tableau-popup-open'
+            );
+          }
+      );
     }
 
     /**
-     * Tableau 계정 팝업 닫기
+     * Tableau 팝업 닫기
      */
     const closePopup = (): void => {
       popup.classList.remove('is-open');
@@ -1192,9 +1584,12 @@ export default class TdkSharepointApplicationCustomizer
 
     if (
         closeBtn &&
-        closeBtn.dataset.tdkPopupBound !== 'true'
+        closeBtn.dataset.tdkPopupBound !==
+        'true'
     ) {
-      closeBtn.dataset.tdkPopupBound = 'true';
+      closeBtn.dataset.tdkPopupBound =
+          'true';
+
       closeBtn.addEventListener(
           'click',
           closePopup
@@ -1203,9 +1598,12 @@ export default class TdkSharepointApplicationCustomizer
 
     if (
         backdrop &&
-        backdrop.dataset.tdkPopupBound !== 'true'
+        backdrop.dataset.tdkPopupBound !==
+        'true'
     ) {
-      backdrop.dataset.tdkPopupBound = 'true';
+      backdrop.dataset.tdkPopupBound =
+          'true';
+
       backdrop.addEventListener(
           'click',
           closePopup
@@ -1222,7 +1620,8 @@ export default class TdkSharepointApplicationCustomizer
               return;
             }
 
-            const currentPopup: HTMLElement | null =
+            const currentPopup:
+                HTMLElement | null =
                 document.getElementById(
                     'tdk-tableau-popup'
                 ) as HTMLElement | null;
@@ -1245,11 +1644,17 @@ export default class TdkSharepointApplicationCustomizer
     }
   }
 
+
+  /* =========================
+     21. LANGUAGE CHANGE
+  ========================= */
+
   /**
    * 언어 선택 변경 이벤트를 연결한다.
    */
   private _bindLanguageChange(): void {
-    const langSelect: HTMLSelectElement | null =
+    const langSelect:
+        HTMLSelectElement | null =
         document.getElementById(
             'tdk-lang-select'
         ) as HTMLSelectElement | null;
@@ -1267,7 +1672,8 @@ export default class TdkSharepointApplicationCustomizer
      * 이벤트 중복 연결 방지
      */
     if (
-        langSelect.dataset.tdkBound === 'true'
+        langSelect.dataset.tdkBound ===
+        'true'
     ) {
       return;
     }
@@ -1300,21 +1706,29 @@ export default class TdkSharepointApplicationCustomizer
           );
 
           /**
-           * 선택한 언어로 포털 화면을 다시 출력한다.
+           * 언어 변경을 일반 페이지 이동으로
+           * 인식하지 않도록 현재 URL 값을 갱신한다.
            */
+          this._lastUrl =
+              currentUrl.toString();
+
           this._rerenderCustomUi();
         }
     );
   }
 
+
+  /* =========================
+     22. UI RERENDER
+  ========================= */
+
   /**
-   * 현재 언어에 맞춰 포털 사용자 정의 UI를 다시 출력한다.
+   * 현재 언어에 맞게
+   * 포털 사용자 정의 UI를 다시 출력한다.
    */
   private _rerenderCustomUi(): void {
     /**
-     * 현재 선택된 Tableau 카드 ID를 저장한다.
-     *
-     * 언어 변경 후에도 선택 상태를 복원하기 위해 사용한다.
+     * 현재 선택된 Tableau 카드 ID 저장
      */
     const activeCard: HTMLElement | null =
         document.querySelector(
@@ -1329,6 +1743,22 @@ export default class TdkSharepointApplicationCustomizer
             : null;
 
     /**
+     * 공지 팝업이 현재 열려 있는지 저장한다.
+     */
+    const currentNoticePopup:
+        HTMLElement | null =
+        document.getElementById(
+            NOTICE_POPUP_IDS.popup
+        ) as HTMLElement | null;
+
+    const wasNoticePopupOpen: boolean =
+        currentNoticePopup
+            ? currentNoticePopup.classList.contains(
+                'is-open'
+            )
+            : false;
+
+    /**
      * 상단 헤더 다시 출력
      */
     if (
@@ -1336,7 +1766,8 @@ export default class TdkSharepointApplicationCustomizer
         this._topPlaceholder.domElement
     ) {
       const topText: string =
-          this.properties.Top || 'TDK KOREA';
+          this.properties.Top ||
+          'TDK KOREA';
 
       this._topPlaceholder.domElement.innerHTML =
           getTopBannerHtml(
@@ -1374,18 +1805,27 @@ export default class TdkSharepointApplicationCustomizer
     }
 
     /**
-     * 기존 배너 Timer와 포스터 모달 상태를 초기화한다.
+     * 기존 배너 Timer 종료
      */
     this._clearHeroBannerTimer();
-    this._closePosterModal();
 
     /**
-     * 현재 언어 기준으로 메인 콘텐츠를 다시 생성한다.
+     * 기존 공지 팝업 상태 정리
+     *
+     * 오늘 하루 보지 않음은 저장하지 않고,
+     * 방문 처리 상태도 변경하지 않는다.
+     */
+    this._closeNoticePopup(
+        false,
+        false
+    );
+
+    /**
+     * 현재 언어를 기준으로 메인 콘텐츠 다시 생성
      */
     wrap.innerHTML = `
       ${getHeroBannerHtml(
         BANNER_URLS,
-        POSTER_URL,
         this._locale
     )}
 
@@ -1401,6 +1841,11 @@ export default class TdkSharepointApplicationCustomizer
 
       ${getDepartmentSectionHtml(
         DEPARTMENT_LINKS,
+        this._locale
+    )}
+
+      ${getNoticePopupHtml(
+        NOTICE_POPUP_IMAGE_URL,
         this._locale
     )}
     `;
@@ -1421,19 +1866,32 @@ export default class TdkSharepointApplicationCustomizer
     this._bindLanguageChange();
     this._bindNavEvents();
     this._bindTableauPopupEvents();
-    this._bindPosterModalEvents();
+    this._bindNoticePopupEvents();
     this._setActiveNav();
 
     /**
-     * 언어 변경 전에 선택되어 있던 Tableau 카드 복원
+     * 언어 변경 전 공지 팝업이 열려 있었다면
+     * 새 언어 화면에서도 다시 연다.
+     */
+    if (wasNoticePopupOpen) {
+      this._openNoticePopup();
+    } else {
+      this._showNoticePopupIfNeeded();
+    }
+
+    /**
+     * 언어 변경 전에 선택되어 있던
+     * Tableau 카드 상태 복원
      */
     if (activeCardId && section) {
-      const restoredButton: HTMLElement | null =
+      const restoredButton:
+          HTMLElement | null =
           section.querySelector(
               `.tdk-main-card[data-card-id="${activeCardId}"]`
           ) as HTMLElement | null;
 
-      const restoredCard: ProductCard | undefined =
+      const restoredCard:
+          ProductCard | undefined =
           this._getProductCardById(
               activeCardId
           );
@@ -1465,33 +1923,40 @@ export default class TdkSharepointApplicationCustomizer
     }
   }
 
+
+  /* =========================
+     23. NAVIGATION
+  ========================= */
+
   /**
-   * 상단 내비게이션 클릭 이벤트를 연결한다.
+   * 상단 내비게이션 메뉴 클릭 이벤트를 연결한다.
    */
   private _bindNavEvents(): void {
-    const navButtons: NodeListOf<HTMLAnchorElement> =
+    const navButtons:
+        NodeListOf<HTMLAnchorElement> =
         document.querySelectorAll(
             '.tdk-nav-btn'
         );
 
     navButtons.forEach(
         (btn: HTMLAnchorElement): void => {
-          /**
-           * 이벤트 중복 연결 방지
-           */
           if (
-              btn.dataset.tdkNavBound === 'true'
+              btn.dataset.tdkNavBound ===
+              'true'
           ) {
             return;
           }
 
-          btn.dataset.tdkNavBound = 'true';
+          btn.dataset.tdkNavBound =
+              'true';
 
           btn.addEventListener(
               'click',
               (): void => {
                 navButtons.forEach(
-                    (el: HTMLAnchorElement): void => {
+                    (
+                        el: HTMLAnchorElement
+                    ): void => {
                       el.classList.remove(
                           'is-active'
                       );
@@ -1502,7 +1967,10 @@ export default class TdkSharepointApplicationCustomizer
                     }
                 );
 
-                btn.classList.add('is-active');
+                btn.classList.add(
+                    'is-active'
+                );
+
                 btn.setAttribute(
                     'aria-current',
                     'page'
@@ -1514,7 +1982,88 @@ export default class TdkSharepointApplicationCustomizer
   }
 
   /**
-   * SharePoint 내부 페이지 이동으로 URL이 변경되는지 감시한다.
+   * 현재 페이지에 맞는
+   * 내비게이션 메뉴를 활성화한다.
+   */
+  private _setActiveNav(): void {
+    const path: string =
+        decodeURIComponent(
+            window.location.pathname
+        ).toLowerCase();
+
+    const navButtons:
+        NodeListOf<HTMLAnchorElement> =
+        document.querySelectorAll(
+            '.tdk-nav-btn'
+        );
+
+    const isBoardPage: boolean =
+        this._isBoardPage();
+
+    navButtons.forEach(
+        (btn: HTMLAnchorElement): void => {
+          btn.classList.remove(
+              'is-active'
+          );
+
+          btn.removeAttribute(
+              'aria-current'
+          );
+
+          const href: string =
+              decodeURIComponent(
+                  btn.href
+              ).toLowerCase();
+
+          if (isBoardPage) {
+            if (
+                href.indexOf(
+                    '게시판.aspx'
+                ) > -1 ||
+                href.indexOf(
+                    'noticeboard.aspx'
+                ) > -1
+            ) {
+              btn.classList.add(
+                  'is-active'
+              );
+
+              btn.setAttribute(
+                  'aria-current',
+                  'page'
+              );
+            }
+          } else {
+            if (
+                href.indexOf(
+                    '/sitepages/home.aspx'
+                ) > -1 ||
+                path.indexOf(
+                    '/sitepages/home.aspx'
+                ) > -1
+            ) {
+              btn.classList.add(
+                  'is-active'
+              );
+
+              btn.setAttribute(
+                  'aria-current',
+                  'page'
+              );
+            }
+          }
+        }
+    );
+  }
+
+
+  /* =========================
+     24. URL WATCH
+  ========================= */
+
+  /**
+   * SharePoint 내부 페이지 이동으로
+   * URL이 변경되는지 주기적으로 확인한다.
    */
   private _watchUrlChange(): void {
     if (this._urlWatchTimer) {
@@ -1535,110 +2084,67 @@ export default class TdkSharepointApplicationCustomizer
             this._locale =
                 this._getLocale();
 
+            /**
+             * 새로운 페이지 방문으로 처리하여
+             * 메인으로 돌아왔을 때 공지 팝업을 다시 확인한다.
+             */
+            this._noticePopupHandledForCurrentVisit =
+                false;
+
             this._applyPermissionUiImmediately();
 
             /**
              * 첫 번째 화면 동기화
              */
-            window.setTimeout((): void => {
-              this._applyPermissionUi();
-              this._syncPageUi();
-              this._bindLanguageChange();
-              this._bindNavEvents();
-              this._bindTableauPopupEvents();
-              this._bindPosterModalEvents();
-            }, 150);
+            window.setTimeout(
+                (): void => {
+                  this._applyPermissionUi();
+                  this._syncPageUi();
+                  this._bindLanguageChange();
+                  this._bindNavEvents();
+                  this._bindTableauPopupEvents();
+                  this._bindNoticePopupEvents();
+                  this._showNoticePopupIfNeeded();
+                },
+                150
+            );
 
             /**
-             * SharePoint DOM 출력 지연을 고려한 두 번째 동기화
+             * SharePoint DOM 출력 지연을 고려한
+             * 두 번째 화면 동기화
              */
-            window.setTimeout((): void => {
-              this._applyPermissionUi();
-              this._syncPageUi();
-              this._bindTableauPopupEvents();
-              this._bindPosterModalEvents();
-            }, 500);
+            window.setTimeout(
+                (): void => {
+                  this._applyPermissionUi();
+                  this._syncPageUi();
+                  this._bindTableauPopupEvents();
+                  this._bindNoticePopupEvents();
+                  this._showNoticePopupIfNeeded();
+                },
+                500
+            );
           }
         }, 200);
   }
 
-  /**
-   * 현재 페이지에 맞는 내비게이션 메뉴를 활성화한다.
-   */
-  private _setActiveNav(): void {
-    const path: string =
-        decodeURIComponent(
-            window.location.pathname
-        ).toLowerCase();
 
-    const navButtons: NodeListOf<HTMLAnchorElement> =
-        document.querySelectorAll(
-            '.tdk-nav-btn'
-        );
-
-    const isBoardPage: boolean =
-        this._isBoardPage();
-
-    navButtons.forEach(
-        (btn: HTMLAnchorElement): void => {
-          btn.classList.remove('is-active');
-          btn.removeAttribute('aria-current');
-
-          const href: string =
-              decodeURIComponent(
-                  btn.href
-              ).toLowerCase();
-
-          /**
-           * 게시판 페이지 활성화
-           */
-          if (isBoardPage) {
-            if (
-                href.indexOf('게시판.aspx') > -1 ||
-                href.indexOf('noticeboard.aspx') > -1
-            ) {
-              btn.classList.add('is-active');
-
-              btn.setAttribute(
-                  'aria-current',
-                  'page'
-              );
-            }
-          } else {
-            /**
-             * 메인 페이지 활성화
-             */
-            if (
-                href.indexOf(
-                    '/sitepages/home.aspx'
-                ) > -1 ||
-                path.indexOf(
-                    '/sitepages/home.aspx'
-                ) > -1
-            ) {
-              btn.classList.add('is-active');
-
-              btn.setAttribute(
-                  'aria-current',
-                  'page'
-              );
-            }
-          }
-        }
-    );
-  }
+  /* =========================
+     25. STYLE
+  ========================= */
 
   /**
    * 사용자 정의 CSS를 문서 HEAD에 추가한다.
    */
   private _injectStyles(): void {
-    const existingStyle: HTMLElement | null =
+    const existingStyle:
+        HTMLElement | null =
         document.getElementById(
             'tdk-custom-style'
         );
 
     /**
-     * 기존 Style이 있으면 제거하여 중복 적용을 방지한다.
+     * 기존 Style이 있으면 제거하여
+     * CSS가 중복 적용되는 것을 방지한다.
      */
     if (existingStyle) {
       existingStyle.remove();
@@ -1652,6 +2158,11 @@ export default class TdkSharepointApplicationCustomizer
 
     document.head.appendChild(style);
   }
+
+
+  /* =========================
+     26. DISPOSE
+  ========================= */
 
   /**
    * Application Customizer 종료 시
@@ -1707,30 +2218,33 @@ export default class TdkSharepointApplicationCustomizer
           this._tableauPopupEscHandler
       );
 
-      this._tableauPopupEscHandler = undefined;
+      this._tableauPopupEscHandler =
+          undefined;
     }
 
     /**
-     * 포스터 모달 ESC 이벤트 제거
+     * 공지 팝업 ESC 이벤트 제거
      */
-    if (this._posterModalEscHandler) {
+    if (this._noticePopupEscHandler) {
       document.removeEventListener(
           'keydown',
-          this._posterModalEscHandler
+          this._noticePopupEscHandler
       );
 
-      this._posterModalEscHandler = undefined;
+      this._noticePopupEscHandler =
+          undefined;
     }
 
     /**
-     * BODY에 남아 있을 수 있는 모달 상태 클래스 제거
+     * BODY에 남아 있을 수 있는
+     * 팝업 상태 클래스를 제거한다.
      */
     document.body.classList.remove(
         'tdk-tableau-popup-open'
     );
 
     document.body.classList.remove(
-        'tdk-poster-modal-open'
+        'tdk-notice-popup-open'
     );
 
     console.log(

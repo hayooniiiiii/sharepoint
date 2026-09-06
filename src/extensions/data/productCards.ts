@@ -24,7 +24,13 @@ import {
     DR_SCADA_URL,
     DL_ILLUM_FOCUS_AUTO_MONITOR_TOOL,
     DL_DEFECT_MODE_AUTO_CLASSIFY_TOOL,
-    ADL_CO_RO_FI_URL, ACT_CO_RO_FI_URL, VLSCX_CO_RO_FI_URL, VLSEX_CO_RO_FI_URL, AOI_OK_URL, AOI_NG_URL
+    ADL_CO_RO_FI_URL,
+    ACT_CO_RO_FI_URL,
+    VLSCX_CO_RO_FI_URL,
+    VLSEX_CO_RO_FI_URL,
+    ACT45_AOI_OK_URL,
+    ACT45_AOI_NG_URL, CORE_PROFIT_URL, ACT45_PROFIT_URL, ADL2012_PROFIT_URL, VLSEX_PROFIT_URL, VLSCX_PROFIT_URL,
+    PID_PROFIT_URL
 } from './constants';
 
 const FERRITE_IMAGE = 'https://tdkgroup.sharepoint.com/:i:/r/sites/TJP-TKR-TKR-TDKKorea_Portal-12350/SiteAssets/card/Ferrite%20Core.png?csf=1&web=1&e=cFTbz0';
@@ -160,19 +166,31 @@ export const PRODUCT_CARDS: ProductCard[] = [
                                 ]
                             },
                             {
-                                text: { ko: '딥러닝 AOI 결과&nbsp;&nbsp;Deep Learning AOI Result', en: 'Deep Learning AOI Result', ja: 'ディープラーニングAOIの結果' },
+                                text: { ko: '딥러닝 AOI 결과&nbsp;&nbsp;Deep Learning AOI Results', en: 'Deep Learning AOI Results', ja: 'ディープラーニングAOIの結果' },
                                 children: [
-                                    { text: { ko: 'OK', en: 'OK', ja: 'OK' }, url: AOI_OK_URL },
-                                    { text: { ko: 'NG', en: 'NG', ja: 'NG' }, url: AOI_NG_URL }
+                                    { text: { ko: 'OK', en: 'OK', ja: 'OK' }, url: ACT45_AOI_OK_URL },
+                                    { text: { ko: 'NG', en: 'NG', ja: 'NG' }, url: ACT45_AOI_NG_URL }
                                 ]
                             },
+                            { text: { ko: '6면AOI 결과&nbsp;&nbsp; 6-sided AOI results', en: '6-sided AOI results', ja: '6面AOIの結果' }, url: TABLEAU_URL },
                             { text: { ko: '수리 보고서&nbsp;&nbsp;Repair Report', en: 'Repair Report', ja: '修理報告書' }, url: TABLEAU_URL },
                             { text: { ko: '소모품 관리&nbsp;&nbsp;Consumables Management', en: 'Consumables Management', ja: '消耗品管理' }, url: TABLEAU_URL }
                         ]
                     },
-                    { title: { ko: 'ADL2012', en: 'ADL2012', ja: 'ADL2012' }, image: ADL_IMAGE, links: PREPARING_LINK },
-                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: PREPARING_LINK },
-                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: PREPARING_LINK },
+                    { title: { ko: 'ADL2012', en: 'ADL2012', ja: 'ADL2012' }, image: ADL_IMAGE, links: [
+                            { text: { ko: '6면AOI 결과&nbsp;&nbsp; 6-sided AOI results', en: '6-sided AOI results', ja: '6面AOIの結果' }, url: TABLEAU_URL }
+                        ] },
+
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [
+                            { text: { ko: '딥러닝 AOI 결과&nbsp;&nbsp;Deep Learning AOI Results', en: 'Deep Learning AOI Results', ja: 'ディープラーニングAOIの結果' }, url: TABLEAU_URL },
+                            { text: { ko: '6면AOI 결과&nbsp;&nbsp; 6-sided AOI results', en: '6-sided AOI results', ja: '6面AOIの結果' }, url: TABLEAU_URL }
+                        ]
+                    },
+                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [
+                            { text: { ko: '계선AOI 결과&nbsp;&nbsp;Bonding AOI results', en: 'Bonding AOI results', ja: 'AOI結合結果' }, url: TABLEAU_URL },
+                            { text: { ko: 'AOI T/P 결과&nbsp;&nbsp;AOI Taping results', en: 'AOI Taping results', ja: 'AOIテーピングの結果' }, url: TABLEAU_URL }
+                        ] },
+
                     { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: PREPARING_LINK }
                 ]
             }
@@ -203,7 +221,9 @@ export const PRODUCT_CARDS: ProductCard[] = [
                             { text: { ko: 'D/L불량모드 자동분류툴 <br> Automatic Defect Mode Classification tool for D/L', en: 'Automatic Defect Mode Classification tool for D/L', ja: 'D/L不良モード自動分類ツール' }, url: DL_DEFECT_MODE_AUTO_CLASSIFY_TOOL },
                             { text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
                     { title: { ko: 'ADL2012', en: 'ADL2012', ja: 'ADL2012' }, image: ADL_IMAGE, links: [{ text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
-                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [{ text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [
+                            { text: { ko: 'D/L조도・핀트 자동감시툴 <br> Automatic Illumination & Focus Monitoring Tool for D/L', en: 'Automatic Illumination & Focus Monitoring Tool for D/L', ja: 'D/L照度・ピント自動監視ツール' }, url: TABLEAU_URL },
+                            { text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
                     { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [{ text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] },
                     { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [{ text: { ko: '품질 정보&nbsp;&nbsp;Quality Information', en: 'Quality Information', ja: '品質情報' }, url: TABLEAU_URL }] }
                 ]
@@ -285,7 +305,7 @@ export const PRODUCT_CARDS: ProductCard[] = [
                         title: { ko: 'Ferrite', en: 'Ferrite', ja: 'Ferrite' },
                         image: FERRITE_IMAGE,
                         links: [
-                            { text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit & Loss', ja: '損益情報' }, url: TABLEAU_URL }
+                            { text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit & Loss', ja: '損益情報' }, url: CORE_PROFIT_URL }
                         ]
                     }
                 ]
@@ -293,11 +313,11 @@ export const PRODUCT_CARDS: ProductCard[] = [
             {
                 title: { ko: 'COIL', en: 'COIL', ja: 'COIL' },
                 groups: [
-                    { title: { ko: 'ACT45', en: 'ACT45', ja: 'ACT45' }, image: ACT_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
-                    { title: { ko: 'ADL2012', en: 'ADL2012', ja: 'ADL2012' }, image: ADL_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
-                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
-                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] },
-                    { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: TABLEAU_URL }] }
+                    { title: { ko: 'ACT45', en: 'ACT45', ja: 'ACT45' }, image: ACT_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: ACT45_PROFIT_URL }] },
+                    { title: { ko: 'ADL2012', en: 'ADL2012', ja: 'ADL2012' }, image: ADL_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: ADL2012_PROFIT_URL }] },
+                    { title: { ko: 'VLS-EX', en: 'VLS-EX', ja: 'VLS-EX' }, image: VLS_EX_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: VLSEX_PROFIT_URL }] },
+                    { title: { ko: 'VLS-CX', en: 'VLS-CX', ja: 'VLS-CX' }, image: VLS_CX_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: VLSCX_PROFIT_URL }] },
+                    { title: { ko: 'PID', en: 'PID', ja: 'PID' }, image: PID_IMAGE, links: [{ text: { ko: '손익 정보&nbsp;&nbsp;Profit & Loss', en: 'Profit and Loss Information', ja: '損益情報' }, url: PID_PROFIT_URL }] }
                 ]
             }
         ]

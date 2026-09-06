@@ -1417,551 +1417,516 @@ body.tdk-hide-sp-ui header[role="banner"] {
   font-size: 13px;
   font-weight: 700;
 }
-/* =========================
-   11. HERO BANNER + MX POSTER
-========================= */
-
-/*
- * 메인 배너와 MX 포스터를 가로로 배치한다.
- *
- * 왼쪽: 배너 슬라이드
- * 오른쪽: MX 포스터
- */
-.tdk-hero-layout {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 3.4fr) minmax(230px, 1fr);
-  gap: 16px;
-  align-items: stretch;
-  margin-bottom: 36px;
-  box-sizing: border-box;
-}
-
-/*
- * 기존 배너의 아래쪽 여백은
- * tdk-hero-layout에서 관리하므로 제거한다.
- */
-.tdk-hero-layout .tdk-hero-banner {
-  width: 100%;
-  height: 420px;
-  min-width: 0;
-  margin-bottom: 0;
-  border-radius: 24px;
-}
-
-/*
- * 배너 이미지는 같은 위치에 겹쳐서 배치한다.
- */
-.tdk-hero-layout .tdk-hero-banner__image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 25% 18%;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    opacity 0.5s ease,
-    visibility 0.5s ease;
-}
-
-/*
- * 현재 선택된 배너 이미지만 표시한다.
- */
-.tdk-hero-layout .tdk-hero-banner__image.is-active {
-  opacity: 1;
-  visibility: visible;
-}
-
-/*
- * 배너 제목이 이미지 위에서 잘 보이도록
- * 어두운 그라데이션을 표시한다.
- */
-.tdk-hero-layout .tdk-hero-banner__overlay {
-  z-index: 1;
-  pointer-events: none;
-}
-
-/*
- * 배너 제목 영역
- */
-.tdk-hero-layout .tdk-hero-banner__content {
-  z-index: 2;
-}
-
-/*
- * 배너 이전·다음 버튼
- */
-.tdk-hero-layout .tdk-hero-banner__arrow {
-  z-index: 3;
-}
 
 
 /* =========================
-   11-1. MX POSTER CARD
+   11. NOTICE POPUP
+   브라우저 확대율에 따라 포스터도 확대
 ========================= */
 
 /*
- * 배너 오른쪽에 표시되는 MX 포스터 카드
+ * 팝업 전체 영역
  *
- * 포스터 전체가 클릭 가능한 버튼이다.
+ * 포스터가 브라우저 화면보다 커지면
+ * 팝업 영역 자체에 스크롤이 생긴다.
  */
-.tdk-poster-card {
-  position: relative;
-  width: 100%;
-  height: 420px;
-  min-width: 0;
-  padding: 0;
-  display: block;
-  overflow: hidden;
-  border: none;
-  border-radius: 24px;
-  outline: none;
-  appearance: none;
-  background: #1e3a8a;
-  cursor: pointer;
-  text-align: left;
-  box-sizing: border-box;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-  transition:
-    transform 0.24s ease,
-    box-shadow 0.24s ease;
-}
-
-/*
- * 포스터 미리보기 이미지
- *
- * 세로형 포스터를 카드 전체에 표시한다.
- */
-.tdk-poster-card__image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center top;
-  transition:
-    transform 0.35s ease,
-    filter 0.35s ease;
-}
-
-/*
- * 포스터 하단 안내 문구를 위한 그라데이션
- */
-.tdk-poster-card__overlay {
-  position: absolute;
-  inset: 0;
-  padding: 20px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  box-sizing: border-box;
-  background: linear-gradient(
-    180deg,
-    rgba(3, 7, 18, 0) 35%,
-    rgba(3, 7, 18, 0.15) 58%,
-    rgba(3, 7, 18, 0.88) 100%
-  );
-}
-
-/*
- * 포스터 제목과 안내 문구
- */
-.tdk-poster-card__content {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-/*
- * 포스터 제목
- */
-.tdk-poster-card__title {
-  color: #ffffff;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.2;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.48);
-}
-
-/*
- * 포스터 확대 안내 문구
- */
-.tdk-poster-card__description {
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-/*
- * 포스터 확대 아이콘
- */
-.tdk-poster-card__icon {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1;
-  backdrop-filter: blur(5px);
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-/*
- * 포스터 카드에 마우스를 올렸을 때
- */
-.tdk-poster-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
-}
-
-/*
- * Hover 시 포스터 이미지를 약간 확대한다.
- */
-.tdk-poster-card:hover .tdk-poster-card__image {
-  transform: scale(1.04);
-  filter: brightness(0.9);
-}
-
-/*
- * Hover 시 확대 아이콘을 강조한다.
- */
-.tdk-poster-card:hover .tdk-poster-card__icon {
-  background: #2563eb;
-  transform: scale(1.08);
-}
-
-/*
- * 키보드로 포스터 카드를 선택한 경우
- */
-.tdk-poster-card:focus-visible {
-  box-shadow:
-    0 0 0 4px rgba(37, 99, 235, 0.35),
-    0 18px 40px rgba(15, 23, 42, 0.2);
-}
-
-
-/* =========================
-   11-2. MX POSTER MODAL
-========================= */
-
-/*
- * 포스터 확대 모달 전체 영역
- *
- * 처음에는 숨겨져 있다.
- */
-.tdk-poster-modal {
+.tdk-notice-popup {
   position: fixed;
   inset: 0;
   z-index: 100000;
+
+  /*
+   * 팝업 바깥쪽 여백
+   */
   padding: 24px;
+
+  /*
+   * 포스터가 화면보다 작을 때는 중앙에 표시하고,
+   * 화면보다 커지면 위쪽부터 스크롤할 수 있도록 한다.
+   */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  /*
+   * 브라우저 확대 시 포스터가 화면보다 커지면
+   * 가로/세로 스크롤을 표시한다.
+   */
+  overflow: auto;
+
+  /*
+   * 기존 요청대로 검정 반투명 배경은 사용하지 않는다.
+   */
+  background: transparent;
+
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+
+  box-sizing: border-box;
+
   transition:
-    opacity 0.24s ease,
-    visibility 0.24s ease;
+    opacity 0.22s ease,
+    visibility 0.22s ease;
+
+  /*
+   * 팝업 내부 스크롤을 부드럽게 처리한다.
+   */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /*
- * 모달이 열린 상태
+ * 팝업이 열린 상태
  */
-.tdk-poster-modal.is-open {
+.tdk-notice-popup.is-open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
 /*
- * 모달 뒤쪽의 어두운 배경
+ * 팝업 바깥 클릭 영역
+ *
+ * 팝업이 스크롤되더라도 항상 화면 전체를 덮도록
+ * fixed 위치를 사용한다.
  */
-.tdk-poster-modal__backdrop {
-  position: absolute;
+.tdk-notice-popup__backdrop {
+  position: fixed;
   inset: 0;
-  background: rgba(3, 7, 18, 0.84);
-  backdrop-filter: blur(7px);
+  z-index: 1;
+
+  background: transparent;
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  cursor: pointer;
 }
 
 /*
- * 실제 포스터를 표시하는 모달 창
+ * 포스터 이미지와 하단 버튼 영역을 감싸는 요소
+ *
+ * width를 고정하고 max-width를 제거하여
+ * 브라우저 확대율이 포스터에도 그대로 적용되도록 한다.
  */
-.tdk-poster-modal__dialog {
+.tdk-notice-popup__dialog {
   position: relative;
   z-index: 2;
-  width: min(900px, 94vw);
-  max-height: 94vh;
-  overflow: hidden;
+
+  /*
+   * 포스터 기본 크기
+   *
+   * 브라우저 100%에서는 760px,
+   * 브라우저 125%, 150% 확대 시 실제 화면에서도
+   * 포스터가 함께 확대되어 보인다.
+   */
+  width: 760px;
+
+  /*
+   * 화면 크기에 맞춰 강제로 축소하지 않는다.
+   */
+  min-width: 760px;
+  max-width: none;
+  max-height: none;
+
+  /*
+   * 화면보다 작으면 중앙 정렬되고,
+   * 화면보다 커지면 margin이 0으로 처리되어
+   * 전체 영역을 스크롤할 수 있다.
+   */
+  margin: auto;
+
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.5);
-  transform: translateY(24px) scale(0.97);
-  transition: transform 0.26s ease;
+  align-items: stretch;
+
+  /*
+   * dialog 내부에서 이미지를 자르지 않는다.
+   */
+  overflow: visible;
+
+  flex: 0 0 auto;
+
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+
+  box-shadow:
+    0 14px 42px rgba(15, 23, 42, 0.24);
+
+  transform: translateY(16px) scale(0.97);
+
+  box-sizing: border-box;
+
+  transition:
+    transform 0.24s ease;
 }
 
 /*
- * 모달이 열릴 때 창이 자연스럽게 표시된다.
+ * 팝업이 열릴 때 표시 애니메이션
  */
-.tdk-poster-modal.is-open .tdk-poster-modal__dialog {
+.tdk-notice-popup.is-open
+.tdk-notice-popup__dialog {
   transform: translateY(0) scale(1);
 }
 
 /*
- * 모달 제목 및 닫기 버튼 영역
+ * 포스터 이미지
+ *
+ * 기존의 max-width, max-height를 제거한다.
+ * 브라우저 확대 시 포스터도 함께 커진다.
  */
-.tdk-poster-modal__header {
-  min-height: 64px;
-  padding: 12px 16px 12px 22px;
+.tdk-notice-popup__image {
+  display: block;
+
+  /*
+   * dialog 너비 전체를 사용한다.
+   */
+  width: 100%;
+  height: auto;
+
+  /*
+   * 화면 크기에 맞춰 자동 축소하지 않는다.
+   */
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+
+  margin: 0;
+  padding: 0;
+
+  object-fit: initial;
+
+  background: transparent;
+  border: none;
+  border-radius: 14px 14px 0 0;
+
+  box-sizing: border-box;
+
+  /*
+   * 이미지 드래그 시 브라우저 기본 동작을 유지한다.
+   */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/*
+ * 포스터 오른쪽 위에 겹쳐 표시되는 X 버튼
+ */
+.tdk-notice-popup__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+
+  width: 42px;
+  height: 42px;
+  padding: 0;
+
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  justify-content: center;
+
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e293b;
+
+  font-family: Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 5px 16px rgba(15, 23, 42, 0.24);
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
   box-sizing: border-box;
 }
 
 /*
- * 모달 제목
+ * X 버튼 Hover
  */
-.tdk-poster-modal__title {
-  min-width: 0;
-  color: #0f172a;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.3;
+.tdk-notice-popup__close:hover {
+  background: #ffffff;
+  color: #1d4ed8;
+
+  transform: rotate(90deg);
+
+  box-shadow:
+    0 7px 20px rgba(15, 23, 42, 0.3);
 }
 
 /*
- * 모달 닫기 버튼
+ * 키보드로 X 버튼을 선택한 경우
  */
-.tdk-poster-modal__close {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  padding: 0;
+.tdk-notice-popup__close:focus-visible {
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.3),
+    0 5px 16px rgba(15, 23, 42, 0.24);
+}
+
+/*
+ * 포스터 바로 아래 하단 제어 영역
+ */
+.tdk-notice-popup__footer {
+  width: 100%;
+  min-height: 62px;
+
+  padding: 10px 12px 10px 16px;
+
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  outline: none;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 28px;
-  font-family: Arial, sans-serif;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+  justify-content: space-between;
+  gap: 18px;
+
+  flex-shrink: 0;
+
+  background: #ffffff;
+
+  border-top: 1px solid #e5e7eb;
+  border-radius: 0 0 14px 14px;
+
+  box-sizing: border-box;
 }
 
 /*
- * 닫기 버튼에 마우스를 올린 경우
+ * 오늘 하루 보지 않음 영역
  */
-.tdk-poster-modal__close:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
-  transform: rotate(90deg);
+.tdk-notice-popup__today-label {
+  min-width: 0;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  color: #334155;
+
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+
+  cursor: pointer;
+  user-select: none;
+}
+
+/*
+ * 오늘 하루 보지 않음 체크박스
+ */
+.tdk-notice-popup__today-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+
+  flex-shrink: 0;
+
+  accent-color: #2563eb;
+
+  cursor: pointer;
+}
+
+/*
+ * 오늘 하루 보지 않음 문구
+ */
+.tdk-notice-popup__today-text {
+  display: inline-block;
+
+  line-height: 1.4;
+}
+
+/*
+ * 하단 닫기 버튼
+ */
+.tdk-notice-popup__confirm {
+  min-width: 86px;
+  height: 40px;
+  padding: 0 20px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 10px;
+  outline: none;
+
+  background: #0b4fb3;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 6px 15px rgba(11, 79, 179, 0.22);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  box-sizing: border-box;
+}
+
+/*
+ * 하단 닫기 버튼 Hover
+ */
+.tdk-notice-popup__confirm:hover {
+  background: #083985;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 9px 19px rgba(11, 79, 179, 0.28);
 }
 
 /*
  * 키보드로 닫기 버튼을 선택한 경우
  */
-.tdk-poster-modal__close:focus-visible {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+.tdk-notice-popup__confirm:focus-visible {
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.28),
+    0 6px 15px rgba(11, 79, 179, 0.22);
 }
 
 /*
- * 포스터 원본 이미지 표시 영역
+ * 공지 팝업이 열린 동안
+ * 뒤쪽 SharePoint 화면의 스크롤은 막는다.
  *
- * 이미지가 화면보다 크면 내부 스크롤이 생긴다.
+ * 팝업 자체에는 overflow: auto가 있으므로
+ * 확대된 포스터는 팝업 영역에서 스크롤할 수 있다.
  */
-.tdk-poster-modal__body {
-  min-height: 0;
-  padding: 18px;
-  overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: #e9eef5;
-  box-sizing: border-box;
-}
-
-/*
- * 모달에 표시하는 포스터 원본 이미지
- */
-.tdk-poster-modal__image {
-  width: auto;
-  max-width: 100%;
-  max-height: calc(94vh - 100px);
-  display: block;
-  object-fit: contain;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-}
-
-/*
- * 포스터 모달이 열렸을 때
- * 배경 페이지의 스크롤을 막는다.
- */
-body.tdk-poster-modal-open {
+body.tdk-notice-popup-open {
   overflow: hidden !important;
 }
 
 
 /* =========================
-   11-3. HERO + POSTER RESPONSIVE
+   NOTICE POPUP RESPONSIVE
 ========================= */
 
 /*
- * 화면 폭 1200px 이하
- */
-@media (max-width: 1200px) {
-  .tdk-hero-layout {
-    grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
-    gap: 14px;
-  }
-}
-
-/*
- * 태블릿 화면
- */
-@media (max-width: 1024px) {
-  .tdk-hero-layout {
-    grid-template-columns: minmax(0, 2.5fr) minmax(210px, 1fr);
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .tdk-hero-layout .tdk-hero-banner,
-  .tdk-poster-card {
-    height: 280px;
-    border-radius: 20px;
-  }
-
-  .tdk-hero-layout .tdk-hero-banner {
-    margin-bottom: 0;
-  }
-
-  .tdk-poster-card__overlay {
-    padding: 16px;
-  }
-
-  .tdk-poster-card__title {
-    font-size: 17px;
-  }
-
-  .tdk-poster-card__icon {
-    width: 34px;
-    height: 34px;
-    font-size: 21px;
-  }
-}
-
-/*
- * 모바일 화면에서는
- * 배너와 포스터를 세로로 배치한다.
+ * 기존 코드처럼 포스터를 화면 크기에 맞춰
+ * 다시 축소하면 브라우저 확대 효과가 사라진다.
+ *
+ * 따라서 모바일 구간에서도 포스터 너비는 유지하고
+ * 화면보다 큰 부분은 스크롤로 확인하도록 한다.
  */
 @media (max-width: 768px) {
-  .tdk-hero-layout {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .tdk-hero-layout .tdk-hero-banner {
-    height: 220px;
-    margin-bottom: 0;
-    border-radius: 18px;
-  }
-
-  .tdk-poster-card {
-    height: 320px;
-    border-radius: 18px;
-  }
-
-  .tdk-poster-card__image {
-    object-position: center 16%;
-  }
-
-  .tdk-poster-modal {
+  .tdk-notice-popup {
     padding: 12px;
   }
 
-  .tdk-poster-modal__dialog {
+  .tdk-notice-popup__dialog {
+    width: 760px;
+    min-width: 760px;
+
+    max-width: none;
+    max-height: none;
+
+    border-radius: 12px;
+  }
+
+  .tdk-notice-popup__image {
     width: 100%;
-    max-height: 96vh;
-    border-radius: 16px;
+
+    max-width: none;
+    max-height: none;
+
+    border-radius: 12px 12px 0 0;
   }
 
-  .tdk-poster-modal__header {
-    min-height: 56px;
-    padding: 9px 10px 9px 16px;
+  .tdk-notice-popup__close {
+    top: 9px;
+    right: 9px;
+
+    width: 38px;
+    height: 38px;
+
+    font-size: 25px;
   }
 
-  .tdk-poster-modal__title {
-    font-size: 16px;
+  .tdk-notice-popup__footer {
+    min-height: 58px;
+
+    padding: 9px 10px 9px 13px;
+    gap: 12px;
+
+    border-radius: 0 0 12px 12px;
   }
 
-  .tdk-poster-modal__body {
-    padding: 10px;
+  .tdk-notice-popup__today-label {
+    font-size: 13px;
   }
 
-  .tdk-poster-modal__image {
-    max-height: calc(96vh - 80px);
+  .tdk-notice-popup__today-checkbox {
+    width: 17px;
+    height: 17px;
+  }
+
+  .tdk-notice-popup__confirm {
+    min-width: 72px;
+    height: 38px;
+    padding: 0 14px;
+
+    font-size: 13px;
   }
 }
 
-/*
- * 작은 모바일 화면
- */
 @media (max-width: 480px) {
-  .tdk-hero-layout .tdk-hero-banner {
-    height: 190px;
+  .tdk-notice-popup {
+    padding: 8px;
   }
 
-  .tdk-poster-card {
-    height: 270px;
+  .tdk-notice-popup__dialog {
+    width: 760px;
+    min-width: 760px;
+
+    max-width: none;
+    max-height: none;
   }
 
-  .tdk-poster-card__overlay {
-    padding: 14px;
+  .tdk-notice-popup__image {
+    width: 100%;
+
+    max-width: none;
+    max-height: none;
   }
 
-  .tdk-poster-card__title {
-    font-size: 16px;
+  /*
+   * 작은 화면에서도 하단 영역이 지나치게 길어지지 않도록
+   * 가로 배치를 유지한다.
+   */
+  .tdk-notice-popup__footer {
+    min-height: 58px;
+
+    padding: 9px 10px 9px 13px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
   }
 
-  .tdk-poster-card__description {
-    font-size: 11px;
+  .tdk-notice-popup__today-label {
+    min-height: 32px;
+    padding: 0 3px;
   }
 
-  .tdk-poster-card__icon {
-    width: 32px;
-    height: 32px;
-    font-size: 20px;
+  .tdk-notice-popup__confirm {
+    width: auto;
+    min-width: 72px;
   }
 }
 `;
